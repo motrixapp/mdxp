@@ -1,0 +1,73 @@
+{
+  "name": "@motrix/mdxp",
+  "version": "0.1.0",
+  "description": "Motrix Download eXchange Protocol — JSON-RPC 2.0 wire types and connection helpers",
+  "license": "MIT",
+  "author": "Motrix",
+  "homepage": "https://github.com/motrixapp/mdxp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/motrixapp/mdxp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/motrixapp/mdxp/issues"
+  },
+  "keywords": [
+    "motrix",
+    "mdxp",
+    "json-rpc",
+    "jsonrpc",
+    "download",
+    "protocol",
+    "websocket",
+    "zod"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js",
+      "default": "./dist/node.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js",
+      "default": "./dist/browser.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/__tests__",
+    "README.md"
+  ],
+  "packageManager": "pnpm@11.9.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "^9.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
