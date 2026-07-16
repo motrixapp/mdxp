@@ -26,3 +26,8 @@ export {
   StreamMessageWriter,
 } from 'vscode-jsonrpc/node'
 export * from './index.js'
+export type { StdioOptions } from './transports/stdio.js'
+// High-level convenience constructors for Node transports.
+export { fromStdio } from './transports/stdio.js'
+export type { WebSocketLike } from './transports/ws.js'
+export { fromWebSocket } from './transports/ws.js'

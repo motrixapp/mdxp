@@ -20,3 +20,8 @@ export {
   BrowserMessageWriter,
 } from 'vscode-jsonrpc/browser'
 export * from './index.js'
+export type { WorkerLike } from './transports/worker.js'
+export { fromWorker } from './transports/worker.js'
+export type { WebSocketLike } from './transports/ws.js'
+// High-level convenience constructors for browser transports.
+export { fromWebSocket } from './transports/ws.js'
