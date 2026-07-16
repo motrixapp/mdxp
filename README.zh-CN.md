@@ -30,6 +30,8 @@
 - **平台 RAL 入口**：`./node` 与 `./browser` 会替你装好对应的 `vscode-jsonrpc`
   runtime abstraction layer，并 re-export 它的 transport class —— 连接封装与
   reader/writer 都从同一处 import。
+- **一步构造**：`fromWebSocket`、`fromStdio`、`fromWorker` 一行即可在常见 transport
+  上建好连接；`createMdxpConnection` 仍是通用的底层入口。
 - **面向 agent**：内置的 tool registry 可产出一份 JSON-Schema tool catalog，
   能直接对接 LLM 的 function-calling API。
 - **forward-compatible**：遇到未知的 method 或字段选择忽略，而非 reject。
@@ -67,16 +69,10 @@ transport class**（Node 的 `StreamMessageReader`/`Writer`、浏览器的
 ### Node host（走 stdio）
 
 ```ts
-import {
-  createMdxpConnection,
-  StreamMessageReader,
-  StreamMessageWriter,
-} from '@motrix/mdxp/node'
+import { fromStdio } from '@motrix/mdxp/node'
 
-const conn = createMdxpConnection(
-  new StreamMessageReader(process.stdin),
-  new StreamMessageWriter(process.stdout),
-)
+// 走 process.stdin / process.stdout（native-messaging / CLI 场景）。
+const conn = fromStdio()
 
 // 务必在 listen() 之前注册 handler。
 conn.onNotification('$/task/progress', (p) => {
@@ -87,23 +83,29 @@ conn.onNotification('$/task/progress', (p) => {
 conn.listen()
 ```
 
-### 浏览器 host
+### 浏览器 host（走 WebSocket）
 
 ```ts
-// 装好 browser RAL，并 re-export 全量 API + transport class。
-import {
-  createMdxpConnection,
-  BrowserMessageReader,
-  BrowserMessageWriter,
-} from '@motrix/mdxp/browser'
+import { fromWebSocket } from '@motrix/mdxp/browser'
 
-// 例如一个 MessagePort / Worker；若用 WebSocket，需自行适配成 reader/writer。
-const conn = createMdxpConnection(
-  new BrowserMessageReader(worker),
-  new BrowserMessageWriter(worker),
-)
+const conn = fromWebSocket(new WebSocket('ws://127.0.0.1:16650/v1'))
+conn.onNotification('$/task/progress', (p) => {})
 conn.listen()
 ```
+
+### 便捷构造器
+
+`createMdxpConnection(reader, writer)` 是通用入口 —— 传入任意 `vscode-jsonrpc` 的
+reader/writer。常见 transport 则可直接省去样板：
+
+| 构造器 | 入口 | Transport |
+| --- | --- | --- |
+| `fromWebSocket(ws)` | `./node` · `./browser` | 浏览器 `WebSocket` 或 Node 的 `ws` socket |
+| `fromStdio(opts?)` | `./node` | `process.stdin` / `process.stdout`，或指定的流 |
+| `fromWorker(port)` | `./browser` | 一个 `Worker` 或 `MessagePort` |
+
+每个都返回开箱即用的 `MdxpConnection` —— 你仍需注册 handler 并调用 `listen()`。
+其它 transport 则自行构造 reader/writer，再直接调用 `createMdxpConnection`。
 
 ## 核心概念
 
@@ -305,6 +307,7 @@ const tools = toAgentToolCatalog()
 | 导出 | 类型 | 作用 |
 | --- | --- | --- |
 | `createMdxpConnection(reader, writer)` | function | 把一对 reader/writer 封装成类型化的 `MdxpConnection`。 |
+| `fromWebSocket` · `fromStdio` · `fromWorker` | function | 在 WebSocket / stdio / Worker 上的一步构造器（来自 `./node` · `./browser`）。 |
 | `MdxpConnection` | type | 连接接口（`sendRequest`、`onRequest`、`sendNotification`、`onNotification`、`dispose`、`raw`）。 |
 | `MdxpRequestMap` / `MdxpNotificationMap` | type | method / notification 名 → params/result 类型的映射表。 |
 | `Methods` / `Notifications` | const | wire 名常量（`Methods.DownloadAdd === 'download/add'`）。 |

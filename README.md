@@ -35,6 +35,9 @@ top of it.
 - **Platform RAL entry points.** `./node` and `./browser` install the matching
   `vscode-jsonrpc` runtime abstraction layer and re-export its transport classes,
   so you import everything — connection helper and reader/writer — from one place.
+- **One-call constructors.** `fromWebSocket`, `fromStdio`, and `fromWorker` build
+  a connection over a common transport in a single call; `createMdxpConnection`
+  stays the generic escape hatch.
 - **Agent-ready.** A built-in tool registry emits a JSON-Schema tool catalog you
   can feed straight into an LLM function-calling API.
 - **Forward-compatible.** Unknown methods and fields are ignored, not rejected.
@@ -75,16 +78,10 @@ including its reader/writer, from a single place.
 ### Node host (over stdio)
 
 ```ts
-import {
-  createMdxpConnection,
-  StreamMessageReader,
-  StreamMessageWriter,
-} from '@motrix/mdxp/node'
+import { fromStdio } from '@motrix/mdxp/node'
 
-const conn = createMdxpConnection(
-  new StreamMessageReader(process.stdin),
-  new StreamMessageWriter(process.stdout),
-)
+// Over process.stdin / process.stdout (the native-messaging / CLI case).
+const conn = fromStdio()
 
 // Register handlers BEFORE listen().
 conn.onNotification('$/task/progress', (p) => {
@@ -95,23 +92,30 @@ conn.onNotification('$/task/progress', (p) => {
 conn.listen()
 ```
 
-### Browser host
+### Browser host (over WebSocket)
 
 ```ts
-// Installs the browser RAL and re-exports the full API + transport classes.
-import {
-  createMdxpConnection,
-  BrowserMessageReader,
-  BrowserMessageWriter,
-} from '@motrix/mdxp/browser'
+import { fromWebSocket } from '@motrix/mdxp/browser'
 
-// e.g. a MessagePort / Worker; adapt your WebSocket to reader/writer as needed.
-const conn = createMdxpConnection(
-  new BrowserMessageReader(worker),
-  new BrowserMessageWriter(worker),
-)
+const conn = fromWebSocket(new WebSocket('ws://127.0.0.1:16650/v1'))
+conn.onNotification('$/task/progress', (p) => {})
 conn.listen()
 ```
+
+### Convenience constructors
+
+`createMdxpConnection(reader, writer)` is the generic entry point — bring any
+`vscode-jsonrpc` reader/writer. For the common transports, skip the boilerplate:
+
+| Constructor | Entry | Transport |
+| --- | --- | --- |
+| `fromWebSocket(ws)` | `./node` · `./browser` | A browser `WebSocket` or a Node `ws` socket |
+| `fromStdio(opts?)` | `./node` | `process.stdin` / `process.stdout`, or given streams |
+| `fromWorker(port)` | `./browser` | A `Worker` or `MessagePort` |
+
+Each returns a ready `MdxpConnection` — you still register handlers and call
+`listen()`. For any other transport, build the reader/writer and call
+`createMdxpConnection` directly.
 
 ## Core concepts
 
@@ -321,6 +325,7 @@ const tools = toAgentToolCatalog()
 | Export | Kind | Purpose |
 | --- | --- | --- |
 | `createMdxpConnection(reader, writer)` | function | Wrap a reader/writer pair in a typed `MdxpConnection`. |
+| `fromWebSocket` · `fromStdio` · `fromWorker` | function | One-call constructors over a WebSocket / stdio / Worker (from `./node` · `./browser`). |
 | `MdxpConnection` | type | The connection interface (`sendRequest`, `onRequest`, `sendNotification`, `onNotification`, `dispose`, `raw`). |
 | `MdxpRequestMap` / `MdxpNotificationMap` | type | Method/notification name → params/result type maps. |
 | `Methods` / `Notifications` | const | Wire-name constants (`Methods.DownloadAdd === 'download/add'`). |
