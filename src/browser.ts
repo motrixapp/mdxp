@@ -11,4 +11,12 @@
 // `import { createMdxpConnection } from '@motrix/mdxp/browser'` also works.
 import 'vscode-jsonrpc/browser'
 
+// Browser transport classes, re-exported so a browser host imports its
+// reader/writer from the same place as `createMdxpConnection` — no separate
+// `vscode-jsonrpc` import, and guaranteed to be the instance this package
+// installed the RAL into.
+export {
+  BrowserMessageReader,
+  BrowserMessageWriter,
+} from 'vscode-jsonrpc/browser'
 export * from './index.js'

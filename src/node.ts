@@ -12,4 +12,17 @@
 // `import { createMdxpConnection } from '@motrix/mdxp/node'` also works.
 import 'vscode-jsonrpc/node'
 
+// Node transport classes, re-exported so a Node host imports its reader/writer
+// from the same place as `createMdxpConnection` — no separate `vscode-jsonrpc`
+// import, and guaranteed to be the instance this package installed the RAL into.
+export {
+  IPCMessageReader,
+  IPCMessageWriter,
+  PortMessageReader,
+  PortMessageWriter,
+  SocketMessageReader,
+  SocketMessageWriter,
+  StreamMessageReader,
+  StreamMessageWriter,
+} from 'vscode-jsonrpc/node'
 export * from './index.js'

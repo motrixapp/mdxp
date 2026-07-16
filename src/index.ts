@@ -1,6 +1,17 @@
 // MDXP — Motrix Download eXchange Protocol
 // Public API surface for both Motrix desktop and the browser extension.
 
+// vscode-jsonrpc primitives that appear in this package's public API surface,
+// re-exported so consumers import them from `@motrix/mdxp` instead of reaching
+// for a second package. Platform transport classes (StreamMessageReader,
+// BrowserMessageReader, …) are re-exported from `./node` and `./browser`.
+export type {
+  Disposable,
+  MessageConnection,
+  MessageReader,
+  MessageWriter,
+} from 'vscode-jsonrpc'
+export { CancellationToken, CancellationTokenSource } from 'vscode-jsonrpc'
 export type {
   MdxpConnection,
   MdxpNotificationMap,
