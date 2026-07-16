@@ -28,7 +28,8 @@
   调用处无需任何 cast。
 - **transport-agnostic**：只要实现了 `MessageReader`/`MessageWriter`，任何双工流都能用。
 - **平台 RAL 入口**：`./node` 与 `./browser` 会替你装好对应的 `vscode-jsonrpc`
-  runtime abstraction layer。
+  runtime abstraction layer，并 re-export 它的 transport class —— 连接封装与
+  reader/writer 都从同一处 import。
 - **面向 agent**：内置的 tool registry 可产出一份 JSON-Schema tool catalog，
   能直接对接 LLM 的 function-calling API。
 - **forward-compatible**：遇到未知的 method 或字段选择忽略，而非 reject。
@@ -41,10 +42,11 @@ npm install @motrix/mdxp
 ```
 
 运行时依赖：[`vscode-jsonrpc`](https://www.npmjs.com/package/vscode-jsonrpc)
-`^9`，是本包的直接 `dependency`，会随本包一并装上。下面的示例还直接从
-`vscode-jsonrpc/node` 和 `vscode-jsonrpc/browser` import reader/writer 类；若你也
-这样用，请在自己的 dependencies 里显式声明 `vscode-jsonrpc`，不要依赖 hoisting。
-仅 ESM；需要 Node.js ≥ 18 或现代 bundler。
+`^9`，随本包一并装上。它的 transport class（reader/writer），以及在本包 API 中出现的
+那些 primitive —— `MessageReader`、`MessageConnection`、`CancellationToken`、
+`CancellationTokenSource` 等 —— 都已从 `@motrix/mdxp` re-export（见
+[入口点](#入口点)），因此你几乎无需直接 import `vscode-jsonrpc`。仅 ESM；需要
+Node.js ≥ 18 或现代 bundler。
 
 ### 入口点
 
@@ -56,16 +58,20 @@ npm install @motrix/mdxp
 
 `vscode-jsonrpc` v9 要求先装好一层 runtime abstraction layer（RAL），才能创建连接。
 import `@motrix/mdxp/node` 或 `@motrix/mdxp/browser` 会把对应的 RAL 装进本包所用的
-**同一个** `vscode-jsonrpc` 实例，并 re-export 完整的公开 API —— 于是 host 只需从
-一个入口 import 一切。
+**同一个** `vscode-jsonrpc` 实例，并 re-export 完整的公开 API，**外加该平台的
+transport class**（Node 的 `StreamMessageReader`/`Writer`、浏览器的
+`BrowserMessageReader`/`Writer`）—— 于是 host 连同 reader/writer 都只需从一个入口 import。
 
 ## 快速开始
 
 ### Node host（走 stdio）
 
 ```ts
-import { createMdxpConnection } from '@motrix/mdxp/node'
-import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
+import {
+  createMdxpConnection,
+  StreamMessageReader,
+  StreamMessageWriter,
+} from '@motrix/mdxp/node'
 
 const conn = createMdxpConnection(
   new StreamMessageReader(process.stdin),
@@ -84,9 +90,12 @@ conn.listen()
 ### 浏览器 host
 
 ```ts
-// 装好 browser RAL，并 re-export 全量 API。
-import { createMdxpConnection } from '@motrix/mdxp/browser'
-import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser'
+// 装好 browser RAL，并 re-export 全量 API + transport class。
+import {
+  createMdxpConnection,
+  BrowserMessageReader,
+  BrowserMessageWriter,
+} from '@motrix/mdxp/browser'
 
 // 例如一个 MessagePort / Worker；若用 WebSocket，需自行适配成 reader/writer。
 const conn = createMdxpConnection(
@@ -232,7 +241,7 @@ conn.onNotification('$/task/error', (p) => {
 `token.isCancellationRequested` 即可响应。
 
 ```ts
-import { CancellationTokenSource } from 'vscode-jsonrpc'
+import { CancellationTokenSource } from '@motrix/mdxp'
 
 const cts = new CancellationTokenSource()
 const pending = conn.sendRequest('url/resolve', { url }, cts.token)
@@ -306,6 +315,7 @@ const tools = toAgentToolCatalog()
 | `toAgentToolCatalog()` | function | 取 `agentFacing` 子集，转成 JSON-Schema tools。 |
 | `SERVER_INITIATED_METHODS` | const | 由 server 向 client 发起的 method（`url/probe`、`url/resolve`）。 |
 | `*Schema` | Zod schema | 全部 wire 形态，供运行时校验。 |
+| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `Disposable` | re-export | 本包 API 中用到的 `vscode-jsonrpc` primitive。平台 transport class（`StreamMessageReader`/`Writer`、`BrowserMessageReader`/`Writer`）从 `./node` 与 `./browser` re-export。 |
 
 ### Methods
 

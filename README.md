@@ -33,7 +33,8 @@ top of it.
 - **Transport-agnostic.** Works over anything that implements
   `MessageReader`/`MessageWriter`.
 - **Platform RAL entry points.** `./node` and `./browser` install the matching
-  `vscode-jsonrpc` runtime abstraction layer for you.
+  `vscode-jsonrpc` runtime abstraction layer and re-export its transport classes,
+  so you import everything — connection helper and reader/writer — from one place.
 - **Agent-ready.** A built-in tool registry emits a JSON-Schema tool catalog you
   can feed straight into an LLM function-calling API.
 - **Forward-compatible.** Unknown methods and fields are ignored, not rejected.
@@ -46,10 +47,11 @@ npm install @motrix/mdxp
 ```
 
 Runtime dependency: [`vscode-jsonrpc`](https://www.npmjs.com/package/vscode-jsonrpc)
-`^9`, a direct dependency installed alongside this package. The examples below
-also import reader/writer classes straight from `vscode-jsonrpc/node` and
-`vscode-jsonrpc/browser`; if you do the same, declare `vscode-jsonrpc` in your
-own dependencies rather than relying on hoisting. ESM-only; requires
+`^9`, installed alongside this package. Its transport classes (reader/writer)
+and the primitives that surface in this package's API — `MessageReader`,
+`MessageConnection`, `CancellationToken`, `CancellationTokenSource`, … — are
+re-exported from `@motrix/mdxp` (see [Entry points](#entry-points)), so you
+rarely need to import `vscode-jsonrpc` directly. ESM-only; requires
 Node.js ≥ 18 or a modern bundler.
 
 ### Entry points
@@ -63,16 +65,21 @@ Node.js ≥ 18 or a modern bundler.
 `vscode-jsonrpc` v9 requires a runtime abstraction layer (RAL) to be installed
 before a connection can be created. Importing `@motrix/mdxp/node` or
 `@motrix/mdxp/browser` installs the right one into the **same** `vscode-jsonrpc`
-instance this package uses, and re-exports the entire public API — so a host
-imports everything from a single place.
+instance this package uses, and re-exports the entire public API **plus that
+platform's transport classes** (`StreamMessageReader`/`Writer` for Node,
+`BrowserMessageReader`/`Writer` for the browser) — so a host imports everything,
+including its reader/writer, from a single place.
 
 ## Quick start
 
 ### Node host (over stdio)
 
 ```ts
-import { createMdxpConnection } from '@motrix/mdxp/node'
-import { StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
+import {
+  createMdxpConnection,
+  StreamMessageReader,
+  StreamMessageWriter,
+} from '@motrix/mdxp/node'
 
 const conn = createMdxpConnection(
   new StreamMessageReader(process.stdin),
@@ -91,9 +98,12 @@ conn.listen()
 ### Browser host
 
 ```ts
-// Installs the browser RAL, then re-exports the full API.
-import { createMdxpConnection } from '@motrix/mdxp/browser'
-import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser'
+// Installs the browser RAL and re-exports the full API + transport classes.
+import {
+  createMdxpConnection,
+  BrowserMessageReader,
+  BrowserMessageWriter,
+} from '@motrix/mdxp/browser'
 
 // e.g. a MessagePort / Worker; adapt your WebSocket to reader/writer as needed.
 const conn = createMdxpConnection(
@@ -245,7 +255,7 @@ conn.onNotification('$/task/error', (p) => {
 handler observes `token.isCancellationRequested`.
 
 ```ts
-import { CancellationTokenSource } from 'vscode-jsonrpc'
+import { CancellationTokenSource } from '@motrix/mdxp'
 
 const cts = new CancellationTokenSource()
 const pending = conn.sendRequest('url/resolve', { url }, cts.token)
@@ -321,6 +331,7 @@ const tools = toAgentToolCatalog()
 | `toAgentToolCatalog()` | function | The `agentFacing` subset as JSON-Schema tools. |
 | `SERVER_INITIATED_METHODS` | const | Methods the server calls on the client (`url/probe`, `url/resolve`). |
 | `*Schema` | Zod schema | Every wire shape, for runtime validation. |
+| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `Disposable` | re-export | `vscode-jsonrpc` primitives used across the API. Platform transport classes (`StreamMessageReader`/`Writer`, `BrowserMessageReader`/`Writer`) are re-exported from `./node` and `./browser`. |
 
 ### Methods
 
