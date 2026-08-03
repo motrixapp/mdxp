@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Methods, Notifications } from '../methods.js'
 import { ResourceSchema } from '../schemas/resource.js'
 import { SelectionSchema } from '../schemas/selection.js'
+import { MdxpTaskSchema } from '../schemas/task.js'
 
 describe('Methods', () => {
   it('exports all spec-defined methods', () => {
@@ -412,6 +413,45 @@ describe('Task event schemas', () => {
       message: 'timed out',
     })
     expect(p.code).toBe('network.timeout')
+  })
+})
+
+describe('MdxpTaskSchema errorCode', () => {
+  const baseTask = {
+    id: 't1',
+    type: 'http',
+    name: 'ubuntu.iso',
+    status: 'downloading',
+    progress: 0.5,
+    bytesDone: 500,
+    bytesTotal: 1000,
+    speedBps: 100,
+    etaSec: 5,
+    saveDir: '/downloads',
+    error: null,
+    createdAt: 1000,
+    finishedAt: null,
+    finalPath: null,
+  }
+
+  it('parses with errorCode absent', () => {
+    const t = MdxpTaskSchema.parse(baseTask)
+    expect(t.errorCode).toBeUndefined()
+  })
+
+  it('parses with errorCode null', () => {
+    const t = MdxpTaskSchema.parse({ ...baseTask, errorCode: null })
+    expect(t.errorCode).toBeNull()
+  })
+
+  it('parses with a known errorCode', () => {
+    const t = MdxpTaskSchema.parse({ ...baseTask, errorCode: 'DL_DISK_FULL' })
+    expect(t.errorCode).toBe('DL_DISK_FULL')
+  })
+
+  it('parses with an unknown/future errorCode (open set)', () => {
+    const t = MdxpTaskSchema.parse({ ...baseTask, errorCode: 'DL_FUTURE' })
+    expect(t.errorCode).toBe('DL_FUTURE')
   })
 })
 

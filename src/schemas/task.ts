@@ -59,6 +59,10 @@ export const MdxpTaskSchema = z.object({
   finalPath: z.string().nullable(),
   infoHash: z.string().nullable().optional(),
   bt: MdxpBtSchema.optional(),
+  /** Open set of `DL_*` values (host's `DownloadErrorCode`); the host may add
+   *  new codes over time, so consumers MUST tolerate an unrecognized string
+   *  here rather than reject it — adding a value is not a breaking change. */
+  errorCode: z.string().nullish(),
 })
 
 /** Shared result for write methods that only need to ack. */
