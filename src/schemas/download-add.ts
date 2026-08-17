@@ -22,6 +22,8 @@ const safeDownloadUrl = z
  * `download/submit`. Discriminated on `kind`; strict variants so an agent's
  * typo is loudly rejected rather than silently dropped. The host maps this onto
  * its native taskCreateRequest in Spec 4.
+ * `idempotencyKey` (8-128 chars) marks one logical add for host-side dedup so
+ * a client may safely retry a lost response — same contract as download/submit.
  */
 export const DownloadAddParamsSchema = z.discriminatedUnion('kind', [
   z.strictObject({
@@ -32,12 +34,14 @@ export const DownloadAddParamsSchema = z.discriminatedUnion('kind', [
     headers: z.array(HttpHeaderSchema).optional(),
     connections: z.number().int().min(1).max(128).optional(),
     proxy: z.string().optional(),
+    idempotencyKey: z.string().min(8).max(128).optional(),
   }),
   z.strictObject({
     kind: z.literal('magnet'),
     saveDir: z.string().min(1),
     uri: z.string().startsWith('magnet:?'),
     selectedFiles: z.array(z.number().int().nonnegative()).optional(),
+    idempotencyKey: z.string().min(8).max(128).optional(),
   }),
   z.strictObject({
     kind: z.literal('torrent'),
@@ -45,6 +49,7 @@ export const DownloadAddParamsSchema = z.discriminatedUnion('kind', [
     base64: z.string().min(1),
     selectedFiles: z.array(z.number().int().nonnegative()).optional(),
     displayName: z.string().optional(),
+    idempotencyKey: z.string().min(8).max(128).optional(),
   }),
 ])
 

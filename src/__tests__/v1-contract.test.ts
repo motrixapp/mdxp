@@ -152,6 +152,45 @@ describe('download/add params', () => {
     ).toBe(false)
   })
 
+  it('accepts an optional idempotencyKey on all variants', () => {
+    const idempotencyKey = '018f3b2e-4c5d-7aaa-bbbb-cccccccccccc'
+    expect(
+      DownloadAddParamsSchema.safeParse({
+        kind: 'url',
+        saveDir: '/d',
+        uris: ['https://x/f'],
+        idempotencyKey,
+      }).success
+    ).toBe(true)
+    expect(
+      DownloadAddParamsSchema.safeParse({
+        kind: 'magnet',
+        saveDir: '/d',
+        uri: 'magnet:?xt=urn:btih:abc',
+        idempotencyKey,
+      }).success
+    ).toBe(true)
+    expect(
+      DownloadAddParamsSchema.safeParse({
+        kind: 'torrent',
+        saveDir: '/d',
+        base64: 'AAAA',
+        idempotencyKey,
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects an idempotencyKey shorter than 8 chars', () => {
+    expect(
+      DownloadAddParamsSchema.safeParse({
+        kind: 'url',
+        saveDir: '/d',
+        uris: ['https://x/f'],
+        idempotencyKey: 'short',
+      }).success
+    ).toBe(false)
+  })
+
   it('url variant rejects dangerous schemes (file/javascript/data)', () => {
     for (const uri of [
       'file:///etc/passwd',
