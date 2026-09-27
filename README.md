@@ -57,6 +57,9 @@ re-exported from `@motrix/mdxp` (see [Entry points](#entry-points)), so you
 rarely need to import `vscode-jsonrpc` directly. ESM-only; requires
 Node.js ≥ 18 or a modern bundler.
 
+For development, keep `@types/node` on the Node.js 24 LTS major and update
+within that major. The newest Node.js Current release is not the type baseline.
+
 ### Entry points
 
 | Import | Installs a RAL? | Use it from |
@@ -154,7 +157,13 @@ const hello = await conn.sendRequest('motrix/initialize', {
 
 console.log(hello.server.name, hello.server.version)
 console.log(hello.capabilities.selectionKinds) // e.g. ['direct', 'hls', 'mux']
+const canRevealTask = hello.capabilities.taskReveal ?? false
 ```
+
+`capabilities.taskReveal` is optional on the wire so existing protocol 1.0
+servers remain valid. `InitializeResultSchema` normalizes an absent value to
+`false`; clients that do not parse the result should use `?? false` and hide or
+disable reveal actions.
 
 ### Add a download (client → server)
 
@@ -195,7 +204,18 @@ const { tasks, total } = await conn.sendRequest('task/list', {
 await conn.sendRequest('task/pause',  { taskId: task.id })
 await conn.sendRequest('task/resume', { taskId: task.id })
 await conn.sendRequest('task/remove', { taskId: task.id, deleteFiles: false })
+
+// Invoke only from an explicit user gesture after capability negotiation.
+if (hello.capabilities.taskReveal ?? false) {
+  await conn.sendRequest('task/reveal', { taskId: task.id })
+}
 ```
+
+`task/reveal` asks the desktop host to reveal the task's output in the platform
+file manager. Its strict payload accepts only `taskId`, never an arbitrary local
+path. It is registered in `Tools` for schema discovery but intentionally omitted
+from `toAgentToolCatalog()` because opening a file-manager window is a UI side
+effect and must be initiated by the user.
 
 ### Resolve a page (server → client)
 
@@ -336,7 +356,11 @@ const tools = toAgentToolCatalog()
 | `toAgentToolCatalog()` | function | The `agentFacing` subset as JSON-Schema tools. |
 | `SERVER_INITIATED_METHODS` | const | Methods the server calls on the client (`url/probe`, `url/resolve`). |
 | `*Schema` | Zod schema | Every wire shape, for runtime validation. |
-| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `Disposable` | re-export | `vscode-jsonrpc` primitives used across the API. Platform transport classes (`StreamMessageReader`/`Writer`, `BrowserMessageReader`/`Writer`) are re-exported from `./node` and `./browser`. |
+| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `ResponseError` · `Disposable` | re-export | `vscode-jsonrpc` primitives used across the API. Platform transport classes (`StreamMessageReader`/`Writer`, `BrowserMessageReader`/`Writer`) are re-exported from `./node` and `./browser`. |
+
+Throw `ResponseError` imported from `@motrix/mdxp` when an RPC handler needs
+to preserve an error code and data. Importing that class from another installed
+copy of `vscode-jsonrpc` can cause it to be serialized as an internal error.
 
 ### Methods
 
@@ -351,6 +375,7 @@ const tools = toAgentToolCatalog()
 | `task/get` | client → server | ✓ | Get one task by id. |
 | `task/pause` · `task/resume` | client → server | ✓ | Pause / resume a task. |
 | `task/remove` | client → server | ✓ | Remove a task, optionally deleting files. |
+| `task/reveal` | client → server | | Reveal a task's output in the platform file manager; user gesture only. |
 | `stats/get` | client → server | ✓ | Aggregate global stats (speeds + counts). |
 | `engine/status` | client → server | ✓ | Engine lifecycle state + feature report. |
 | `url/probe` | **server → client** | | Can this client's adapters handle a page? |
@@ -401,6 +426,32 @@ const tools = toAgentToolCatalog()
 - **Schema-first** — define the Zod schema, infer the type; never hand-write a
   type that has a corresponding schema.
 - **Forward-compatible** — ignore the unknown rather than reject it.
+
+## Download directories (since 0.7.0)
+
+An authenticated extension may call `download/directories` with `{}` when
+`motrix/initialize.capabilities.downloadDirectories === true`. The response is
+`{ defaultSaveDir: string | null, favorites: string[], recent: string[] }`.
+Paths belong to the target Motrix host (container paths for Docker). Favorites
+are bounded to 20 entries and recent directories to 10; paths are at most 4096
+characters and cannot contain NUL. An unavailable default is reported as null.
+This method is not agent-facing and must not be exposed on unary HTTP.
+
+That same capability enables optional `download/submit.saveDir`. Only paths
+returned by the host are selectable. The host revalidates against its current
+settings and filesystem policy before accepting a task, including Server allowed
+roots and symlink resolution. An invalid/stale choice must be rejected, never
+silently replaced with the default. This API does not browse arbitrary paths or
+create folders. Omitting `saveDir` retains the current default-directory behavior.
+
+Clients must not send `saveDir` to older hosts: older schemas may silently strip
+unknown fields. Bind a selection to its backend and authenticated instance, retain
+that binding when restoring drafts, and use a new idempotency key after changing
+the destination. Retrying the same key with a different explicit destination is
+an invalid request. A pre-dispatch directory rejection uses `InvalidParams` with
+`data.appCode: "download-directory-unavailable"`; filesystem details are not
+included. Filesystem checks are not an OS sandbox: a local process that can
+replace directories concurrently is outside this guarantee.
 
 ## License
 

@@ -9,6 +9,7 @@ import {
   MdxpTaskStatusSchema,
   TaskGetResultSchema,
   TaskListParamsSchema,
+  TaskRevealParamsSchema,
 } from '../schemas/task.js'
 import {
   SERVER_INITIATED_METHODS,
@@ -77,6 +78,17 @@ describe('MDXP v1 task schemas', () => {
     expect(TaskGetResultSchema.safeParse({ task: sampleTask }).success).toBe(
       true
     )
+  })
+
+  it('task/reveal is a strict task-id-only protocol 1.0 request', () => {
+    expect(Methods.TaskReveal).toBe('task/reveal')
+    expect(TaskRevealParamsSchema.safeParse({ taskId: 't1' }).success).toBe(
+      true
+    )
+    expect(
+      TaskRevealParamsSchema.safeParse({ taskId: 't1', path: '/tmp/file' })
+        .success
+    ).toBe(false)
   })
 })
 
@@ -281,5 +293,18 @@ describe('Tools registry', () => {
     const names = cat.map((t) => t.name)
     expect(names).toContain(Methods.DownloadAdd)
     expect(names).not.toContain(Methods.DownloadSubmit)
+    expect(names).not.toContain(Methods.TaskReveal)
+  })
+
+  it('registers task/reveal as a user-gesture tool, not an agent tool', () => {
+    const reveal = Tools[Methods.TaskReveal]
+    expect(reveal).toBeDefined()
+    expect(reveal?.method).toBe(Methods.TaskReveal)
+    expect(reveal?.agentFacing).toBe(false)
+    expect(reveal?.paramsSchema.safeParse({ taskId: 't1' }).success).toBe(true)
+    expect(
+      reveal?.paramsSchema.safeParse({ taskId: 't1', path: '/x' }).success
+    ).toBe(false)
+    expect(reveal?.resultSchema.safeParse({ ok: true }).success).toBe(true)
   })
 })

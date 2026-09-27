@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DownloadDirectoryPathSchema } from './download-directories.js'
 import { SelectionSchema } from './selection.js'
 
 export const DownloadSubmitParamsSchema = z.object({
@@ -9,6 +10,8 @@ export const DownloadSubmitParamsSchema = z.object({
     siteHint: z.string().max(64).optional(),
   }),
   selection: SelectionSchema,
+  /** Only when capabilities.downloadDirectories is true; must be a listed path. */
+  saveDir: DownloadDirectoryPathSchema.optional(),
   meta: z.object({
     suggestedFilename: z.string().max(255),
     qualityLabel: z.string().max(64),

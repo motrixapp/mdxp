@@ -101,6 +101,12 @@ export const TaskRemoveParamsSchema = z.strictObject({
   deleteFiles: z.boolean().optional(),
 })
 
+// ─── task/reveal ──────────────────────────────────────────────
+/** Ask the host to reveal a task's output in the platform file manager. */
+export const TaskRevealParamsSchema = z.strictObject({
+  taskId: z.string().min(1),
+})
+
 export type MdxpTaskStatus = z.infer<typeof MdxpTaskStatusSchema>
 export type MdxpTaskType = z.infer<typeof MdxpTaskTypeSchema>
 export type MdxpTask = z.infer<typeof MdxpTaskSchema>
@@ -115,3 +121,5 @@ export type TaskResumeParams = z.infer<typeof TaskResumeParamsSchema>
 export type TaskResumeResult = OkResult
 export type TaskRemoveParams = z.infer<typeof TaskRemoveParamsSchema>
 export type TaskRemoveResult = OkResult
+export type TaskRevealParams = z.infer<typeof TaskRevealParamsSchema>
+export type TaskRevealResult = OkResult

@@ -4,6 +4,7 @@ import 'vscode-jsonrpc/node'
 import { describe, expect, it } from 'vitest'
 import type { Message, MessageReader, MessageWriter } from 'vscode-jsonrpc'
 import { createMdxpConnection } from '../connection.js'
+import { ErrorCodes, ResponseError } from '../index.js'
 
 // In-memory message pipe for testing.
 class InMemoryReader implements MessageReader {
@@ -63,6 +64,34 @@ function makePair(): {
 }
 
 describe('createMdxpConnection', () => {
+  it('preserves codes and data from the public ResponseError constructor', async () => {
+    const { aToB, bToA } = makePair()
+    const a = createMdxpConnection(bToA.reader, aToB.writer)
+    const b = createMdxpConnection(aToB.reader, bToA.writer)
+    b.onRequest('download/directories', async () => {
+      throw new ResponseError(
+        ErrorCodes.InvalidParams,
+        'Directory unavailable',
+        {
+          appCode: 'download-directory-unavailable',
+        }
+      )
+    })
+    a.listen()
+    b.listen()
+    try {
+      await expect(
+        a.sendRequest('download/directories', {})
+      ).rejects.toMatchObject({
+        code: ErrorCodes.InvalidParams,
+        message: 'Directory unavailable',
+        data: { appCode: 'download-directory-unavailable' },
+      })
+    } finally {
+      a.dispose()
+      b.dispose()
+    }
+  })
   it('round-trips a system/ping request', async () => {
     const { aToB, bToA } = makePair()
     const a = createMdxpConnection(bToA.reader, aToB.writer)

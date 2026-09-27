@@ -9,6 +9,10 @@ export type {
   DownloadAddResult,
 } from './schemas/download-add.js'
 export type {
+  DownloadDirectoriesParams,
+  DownloadDirectoriesResult,
+} from './schemas/download-directories.js'
+export type {
   EngineFeatureReport,
   EngineState,
   EngineStatusParams,
@@ -54,6 +58,8 @@ export type {
   TaskRemoveResult,
   TaskResumeParams,
   TaskResumeResult,
+  TaskRevealParams,
+  TaskRevealResult,
 } from './schemas/task.js'
 export type {
   UrlProbeParams,

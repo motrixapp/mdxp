@@ -1,5 +1,6 @@
 export * from './download.js'
 export * from './download-add.js'
+export * from './download-directories.js'
 export * from './engine.js'
 export * from './events.js'
 export * from './initialize.js'

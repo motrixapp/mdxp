@@ -11,7 +11,11 @@ export type {
   MessageReader,
   MessageWriter,
 } from 'vscode-jsonrpc'
-export { CancellationToken, CancellationTokenSource } from 'vscode-jsonrpc'
+export {
+  CancellationToken,
+  CancellationTokenSource,
+  ResponseError,
+} from 'vscode-jsonrpc'
 export type {
   MdxpConnection,
   MdxpNotificationMap,
