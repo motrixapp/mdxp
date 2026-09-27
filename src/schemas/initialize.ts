@@ -70,6 +70,10 @@ const ServerCapabilitiesSchema = z.object({
   selectionKinds: z.array(z.enum(['direct', 'hls', 'dash', 'mux'])),
   progress: z.boolean(),
   cancellation: z.boolean(),
+  /** Optional on the wire for protocol 1.0 compatibility; absent is false. */
+  taskReveal: z.boolean().optional().default(false),
+  /** Enables download/directories AND download/submit.saveDir; absent is false. */
+  downloadDirectories: z.boolean().optional(),
 })
 
 export const InitializeResultSchema = z.object({

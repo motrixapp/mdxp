@@ -11,6 +11,10 @@ import {
   DownloadAddResultSchema,
 } from './schemas/download-add.js'
 import {
+  DownloadDirectoriesParamsSchema,
+  DownloadDirectoriesResultSchema,
+} from './schemas/download-directories.js'
+import {
   EngineStatusParamsSchema,
   EngineStatusResultSchema,
 } from './schemas/engine.js'
@@ -32,6 +36,7 @@ import {
   TaskPauseParamsSchema,
   TaskRemoveParamsSchema,
   TaskResumeParamsSchema,
+  TaskRevealParamsSchema,
 } from './schemas/task.js'
 
 export interface MdxpToolDef {
@@ -75,6 +80,14 @@ export const Tools: Readonly<Record<string, MdxpToolDef>> = {
     description: 'Liveness probe; echoes sentAt with the server recvAt.',
     paramsSchema: SystemPingParamsSchema,
     resultSchema: SystemPingResultSchema,
+    agentFacing: false,
+  },
+  [Methods.DownloadDirectories]: {
+    method: Methods.DownloadDirectories,
+    description:
+      'List available default, favorite and recent directories on the Motrix host.',
+    paramsSchema: DownloadDirectoriesParamsSchema,
+    resultSchema: DownloadDirectoriesResultSchema,
     agentFacing: false,
   },
   [Methods.DownloadSubmit]: {
@@ -134,6 +147,13 @@ export const Tools: Readonly<Record<string, MdxpToolDef>> = {
     paramsSchema: TaskRemoveParamsSchema,
     resultSchema: OkResultSchema,
     agentFacing: true,
+  },
+  [Methods.TaskReveal]: {
+    method: Methods.TaskReveal,
+    description: "Reveal a task's output in the platform file manager.",
+    paramsSchema: TaskRevealParamsSchema,
+    resultSchema: OkResultSchema,
+    agentFacing: false,
   },
   [Methods.StatsGet]: {
     method: Methods.StatsGet,

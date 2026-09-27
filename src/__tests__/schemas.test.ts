@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { Methods, Notifications } from '../methods.js'
 import { ResourceSchema } from '../schemas/resource.js'
 import { SelectionSchema } from '../schemas/selection.js'
-import { MdxpTaskSchema } from '../schemas/task.js'
+import {
+  MdxpTaskSchema,
+  OkResultSchema,
+  TaskRevealParamsSchema,
+} from '../schemas/task.js'
 
 describe('Methods', () => {
   it('exports all spec-defined methods', () => {
@@ -12,6 +16,7 @@ describe('Methods', () => {
     expect(Methods.UrlProbe).toBe('url/probe')
     expect(Methods.UrlResolve).toBe('url/resolve')
     expect(Methods.SystemPing).toBe('system/ping')
+    expect(Methods.TaskReveal).toBe('task/reveal')
   })
 
   it('Methods object is frozen', () => {
@@ -172,6 +177,24 @@ describe('InitializeResult selectionKinds', () => {
   })
 })
 
+describe('task/reveal schemas', () => {
+  it('accepts exactly one non-empty taskId', () => {
+    expect(TaskRevealParamsSchema.parse({ taskId: 'task-1' })).toEqual({
+      taskId: 'task-1',
+    })
+    expect(TaskRevealParamsSchema.safeParse({ taskId: '' }).success).toBe(false)
+    expect(
+      TaskRevealParamsSchema.safeParse({ taskId: 'task-1', extra: true })
+        .success
+    ).toBe(false)
+  })
+
+  it('uses the shared ok result', () => {
+    expect(OkResultSchema.parse({ ok: true })).toEqual({ ok: true })
+    expect(OkResultSchema.safeParse({ ok: false }).success).toBe(false)
+  })
+})
+
 import {
   InitializeParamsSchema,
   InitializeResultSchema,
@@ -267,6 +290,28 @@ describe('InitializeResultSchema', () => {
       pairToken: 'abc123',
     })
     expect(r.pairToken).toBe('abc123')
+  })
+
+  it('keeps taskReveal optional for older protocol 1.0 servers', () => {
+    const legacy = InitializeResultSchema.parse({
+      protocolVersion: '1.0',
+      server: { name: 'motrix', version: '2.0', runtime: 'electron' },
+      capabilities: {
+        ffmpegAvailable: true,
+        selectionKinds: ['direct'],
+        progress: true,
+        cancellation: true,
+      },
+      serverAdapters: [],
+    })
+    expect(legacy.capabilities.taskReveal).toBe(false)
+
+    const current = InitializeResultSchema.parse({
+      ...legacy,
+      capabilities: { ...legacy.capabilities, taskReveal: true },
+    })
+    expect(current.capabilities.taskReveal).toBe(true)
+    expect(current.protocolVersion).toBe('1.0')
   })
 })
 

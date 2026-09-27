@@ -2,6 +2,7 @@
 export const Methods = Object.freeze({
   MotrixInitialize: 'motrix/initialize',
   DownloadSubmit: 'download/submit',
+  DownloadDirectories: 'download/directories',
   DownloadCancel: 'download/cancel',
   UrlProbe: 'url/probe',
   UrlResolve: 'url/resolve',
@@ -13,6 +14,7 @@ export const Methods = Object.freeze({
   TaskPause: 'task/pause',
   TaskResume: 'task/resume',
   TaskRemove: 'task/remove',
+  TaskReveal: 'task/reveal',
   StatsGet: 'stats/get',
   EngineStatus: 'engine/status',
 } as const)

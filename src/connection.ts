@@ -11,6 +11,8 @@ import type {
   DownloadAddResult,
   DownloadCancelParams,
   DownloadCancelResult,
+  DownloadDirectoriesParams,
+  DownloadDirectoriesResult,
   DownloadSubmitParams,
   DownloadSubmitResult,
   EngineStatusParams,
@@ -36,6 +38,8 @@ import type {
   TaskRemoveResult,
   TaskResumeParams,
   TaskResumeResult,
+  TaskRevealParams,
+  TaskRevealResult,
   UrlProbeParams,
   UrlProbeResult,
   UrlResolveParams,
@@ -46,6 +50,7 @@ import type {
 export interface MdxpRequestMap {
   'motrix/initialize': [InitializeParams, InitializeResult]
   'download/submit': [DownloadSubmitParams, DownloadSubmitResult]
+  'download/directories': [DownloadDirectoriesParams, DownloadDirectoriesResult]
   'download/cancel': [DownloadCancelParams, DownloadCancelResult]
   'url/probe': [UrlProbeParams, UrlProbeResult]
   'url/resolve': [UrlResolveParams, UrlResolveResult]
@@ -57,6 +62,7 @@ export interface MdxpRequestMap {
   'task/pause': [TaskPauseParams, TaskPauseResult]
   'task/resume': [TaskResumeParams, TaskResumeResult]
   'task/remove': [TaskRemoveParams, TaskRemoveResult]
+  'task/reveal': [TaskRevealParams, TaskRevealResult]
   'stats/get': [StatsGetParams, StatsResult]
   'engine/status': [EngineStatusParams, EngineStatusResult]
 }

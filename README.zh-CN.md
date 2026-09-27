@@ -50,6 +50,9 @@ npm install @motrix/mdxp
 [入口点](#入口点)），因此你几乎无需直接 import `vscode-jsonrpc`。仅 ESM；需要
 Node.js ≥ 18 或现代 bundler。
 
+开发时，`@types/node` 保持在 Node.js 24 LTS 主版本内升级，不跟随最新的
+Node.js Current 主版本。
+
 ### 入口点
 
 | import | 是否装 RAL | 使用场景 |
@@ -140,7 +143,12 @@ const hello = await conn.sendRequest('motrix/initialize', {
 
 console.log(hello.server.name, hello.server.version)
 console.log(hello.capabilities.selectionKinds) // 例如 ['direct', 'hls', 'mux']
+const canRevealTask = hello.capabilities.taskReveal ?? false
 ```
+
+`capabilities.taskReveal` 在 wire 上是可选字段，以便既有的 protocol 1.0 server 继续有效。
+`InitializeResultSchema` 会把缺失值归一为 `false`；未解析 result 的 client 应使用
+`?? false`，并隐藏或禁用“在文件管理器中显示”操作。
 
 ### 添加下载（client → server）
 
@@ -180,7 +188,16 @@ const { tasks, total } = await conn.sendRequest('task/list', {
 await conn.sendRequest('task/pause',  { taskId: task.id })
 await conn.sendRequest('task/resume', { taskId: task.id })
 await conn.sendRequest('task/remove', { taskId: task.id, deleteFiles: false })
+
+// 仅在能力协商通过后，由明确的用户手势触发。
+if (hello.capabilities.taskReveal ?? false) {
+  await conn.sendRequest('task/reveal', { taskId: task.id })
+}
 ```
+
+`task/reveal` 请求桌面端在系统文件管理器中显示该 task 的输出。其严格载荷只接受
+`taskId`，绝不接受任意本地路径。它会注册在 `Tools` 中以便发现 schema，但不会进入
+`toAgentToolCatalog()`；打开文件管理器属于 UI 副作用，必须由用户发起。
 
 ### 解析页面（server → client）
 
@@ -318,7 +335,11 @@ const tools = toAgentToolCatalog()
 | `toAgentToolCatalog()` | function | 取 `agentFacing` 子集，转成 JSON-Schema tools。 |
 | `SERVER_INITIATED_METHODS` | const | 由 server 向 client 发起的 method（`url/probe`、`url/resolve`）。 |
 | `*Schema` | Zod schema | 全部 wire 形态，供运行时校验。 |
-| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `Disposable` | re-export | 本包 API 中用到的 `vscode-jsonrpc` primitive。平台 transport class（`StreamMessageReader`/`Writer`、`BrowserMessageReader`/`Writer`）从 `./node` 与 `./browser` re-export。 |
+| `MessageReader` · `MessageWriter` · `MessageConnection` · `CancellationToken` · `CancellationTokenSource` · `ResponseError` · `Disposable` | re-export | 本包 API 中用到的 `vscode-jsonrpc` primitive。平台 transport class（`StreamMessageReader`/`Writer`、`BrowserMessageReader`/`Writer`）从 `./node` 与 `./browser` re-export。 |
+
+RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导入的
+`ResponseError`。从另一份 `vscode-jsonrpc` 实例导入该类，可能导致错误被序列化
+为内部错误。
 
 ### Methods
 
@@ -333,6 +354,7 @@ const tools = toAgentToolCatalog()
 | `task/get` | client → server | ✓ | 按 id 取单个 task。 |
 | `task/pause` · `task/resume` | client → server | ✓ | 暂停 / 恢复 task。 |
 | `task/remove` | client → server | ✓ | 移除 task，可选一并删除文件。 |
+| `task/reveal` | client → server | | 在系统文件管理器中显示 task 输出；仅限用户手势。 |
 | `stats/get` | client → server | ✓ | 取聚合的全局统计（速度 + 计数）。 |
 | `engine/status` | client → server | ✓ | 取下载引擎的生命周期状态与 feature report。 |
 | `url/probe` | **server → client** | | 该 client 的 adapter 能否处理某页面？ |
@@ -382,6 +404,27 @@ const tools = toAgentToolCatalog()
   `MessageWriter` 双工流都能承载它。
 - **schema-first** —— 先定义 Zod schema，再推断类型；绝不手写已有对应 schema 的类型。
 - **forward-compatible** —— 对未知之物选择忽略，而非 reject。
+
+## 下载目录（自 0.7.0 起）
+
+已认证的扩展在 `motrix/initialize.capabilities.downloadDirectories === true`
+时，可以使用空参数 `{}` 调用 `download/directories`。响应为
+`{ defaultSaveDir: string | null, favorites: string[], recent: string[] }`。
+路径属于目标 Motrix 主机；Docker 中为容器内路径。收藏最多 20 项，最近目录
+最多 10 项，路径最长 4096 个字符且不能包含 NUL。不可用的默认目录返回 null。
+该方法不是 agent-facing 接口，不得通过 unary HTTP 暴露。
+
+此能力同时启用可选的 `download/submit.saveDir`。只能选择目标返回的目录；
+任务受理前，目标必须依据当前设置、目录状态及文件系统策略重新校验。Server
+继续执行允许目录范围和符号链接校验。失效目录必须拒绝，不得静默改存默认目录。
+接口不支持任意目录浏览或新建目录；省略 `saveDir` 保留原有默认目录行为。
+
+旧版可能静默丢弃未知字段，因此未协商该能力时不得发送 `saveDir`。客户端需将
+目录选择绑定到后端配置和已认证实例，恢复草稿时保留绑定；修改目录后应生成新的
+幂等键。同一幂等键更换显式目录属于无效请求。受理前的目录拒绝使用
+`InvalidParams`，并携带 `data.appCode: "download-directory-unavailable"`，
+不返回底层文件系统错误细节。目录校验不是操作系统沙箱，不能防御有权限并发替换
+目录的本地进程。
 
 ## License
 
