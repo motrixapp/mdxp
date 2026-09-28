@@ -40,7 +40,7 @@ top of it.
   stays the generic escape hatch.
 - **Agent-ready.** A built-in tool registry emits a JSON-Schema tool catalog you
   can feed straight into an LLM function-calling API.
-- **Forward-compatible.** Unknown methods and fields are ignored, not rejected.
+- **Capability negotiation.** Optional features require host support; strict request schemas reject unknown fields, and unknown requests receive `MethodNotFound`.
 
 ## Installation
 
@@ -419,13 +419,34 @@ copy of `vscode-jsonrpc` can cause it to be serialized as an internal error.
   a newer server may add fields that older clients ignore. An unknown method is
   rejected with `MethodNotFound` rather than crashing the session.
 
+## Safari support and trust boundaries (since 0.8.0)
+
+Extension initialization accepts `client.browser: 'safari'` alongside `chromium`
+and `firefox`. The wire protocol remains `1.0`; extension clients without `kind`
+retain the legacy default. The exported browser union is wider, so TypeScript
+consumers with exhaustive browser switches must handle Safari. Hosts using older
+schemas must upgrade before accepting Safari clients.
+
+The connection helpers provide TypeScript signatures, not automatic runtime
+schema validation or authentication. Validate untrusted params and results with
+the exported schemas at the host/client boundary. Browser names, extension IDs,
+and other caller-supplied identity fields do not prove origin, signing identity,
+or authorization. The host must authenticate the transport/session and enforce
+permissions independently. Likewise, `agentFacing: false` filters the tool
+catalog; it is not an access-control mechanism.
+
+Keep message size/rate limits, allowed download locations and URL policies in
+the host. A schema-valid URL or path does not establish permission to access it.
+Malformed WebSocket delivery errors are reported through `connection.raw.onError`
+instead of escaping the socket listener; this does not replace host input limits.
+
 ## Design principles
 
 - **Transport-agnostic** — the library never assumes a specific transport; any
   `MessageReader`/`MessageWriter` duplex works.
 - **Schema-first** — define the Zod schema, infer the type; never hand-write a
   type that has a corresponding schema.
-- **Forward-compatible** — ignore the unknown rather than reject it.
+- **Forward-compatible** — extend optional fields while preserving explicit request validation and capability negotiation.
 
 ## Download directories (since 0.7.0)
 

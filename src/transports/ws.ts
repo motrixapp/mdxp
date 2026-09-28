@@ -67,16 +67,17 @@ class WebSocketMessageReader implements MessageReader {
 
   private readonly onMessage = (event: { readonly data?: unknown }): void => {
     if (!this.callback) return
-    let message: Message
     try {
-      message = JSON.parse(toText(event.data)) as Message
+      const message = JSON.parse(toText(event.data)) as Message
+      // The JSON-RPC receiver may synchronously reject a malformed envelope.
+      // Report it through the transport rather than escaping the socket listener.
+      this.callback(message)
     } catch (error) {
       this.errorEmitter.fire(
         error instanceof Error ? error : new Error(String(error))
       )
       return
     }
-    this.callback(message)
   }
 
   private readonly onCloseEvent = (): void => {
