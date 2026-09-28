@@ -22,7 +22,7 @@ const ExtensionClientSchema = z.object({
   name: z.string().min(1),
   version: z.string().min(1),
   extensionId: z.string().min(1),
-  browser: z.enum(['chromium', 'firefox']),
+  browser: z.enum(['chromium', 'firefox', 'safari']),
   browserVersion: z.string().min(1),
   locale: z.string().min(1),
 })

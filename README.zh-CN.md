@@ -34,7 +34,7 @@
   上建好连接；`createMdxpConnection` 仍是通用的底层入口。
 - **面向 agent**：内置的 tool registry 可产出一份 JSON-Schema tool catalog，
   能直接对接 LLM 的 function-calling API。
-- **forward-compatible**：遇到未知的 method 或字段选择忽略，而非 reject。
+- **能力协商**：可选功能需要主机明确支持；严格请求 schema 拒绝未知字段，未知请求返回 `MethodNotFound`。
 
 ## 安装
 
@@ -398,12 +398,28 @@ RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导�
   较新的 server 可以新增字段，较旧的 client 忽略即可；未知的 method 会以
   `MethodNotFound` 被拒绝，而不会拖垮整个 session。
 
+## Safari 支持与信任边界（自 0.8.0 起）
+
+扩展初始化的 `client.browser` 在 `chromium`、`firefox` 之外接受 `safari`。
+线协议仍为 `1.0`；未传 `kind` 的扩展仍使用原有默认值。公开的 browser
+联合类型扩大，使用 TypeScript 穷尽分支的消费者需处理 Safari。使用旧 schema
+的主机必须升级后才能接受 Safari 客户端。
+
+连接辅助函数提供 TypeScript 类型约束，不会自动执行运行时 schema 校验或认证。
+主机和客户端需使用导出的 schema 校验不可信参数与结果。浏览器名称、扩展 ID
+及其他调用者声明的身份字段，不能证明 Origin、签名身份或权限；主机必须独立
+认证传输/会话并执行权限检查。`agentFacing: false` 只过滤工具目录，不是访问控制。
+
+消息大小、速率、允许下载目录和 URL 策略由主机限制。URL 或路径通过 schema
+校验不意味着获准访问该资源。异常 WebSocket 消息投递通过
+`connection.raw.onError` 报告，不再向 socket 监听器外抛出；这不能代替主机输入限制。
+
 ## 设计原则
 
 - **transport-agnostic** —— 本库不假定任何特定 transport；任何 `MessageReader`/
   `MessageWriter` 双工流都能承载它。
 - **schema-first** —— 先定义 Zod schema，再推断类型；绝不手写已有对应 schema 的类型。
-- **forward-compatible** —— 对未知之物选择忽略，而非 reject。
+- **forward-compatible** —— 扩展可选字段，同时保留明确的请求校验和能力协商。
 
 ## 下载目录（自 0.7.0 起）
 

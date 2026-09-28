@@ -37,6 +37,10 @@ class MockSocket implements WebSocketLike {
     for (const listener of this.listeners.close ?? []) listener({})
   }
 
+  receive(data: unknown): void {
+    for (const listener of this.listeners.message ?? []) listener({ data })
+  }
+
   addEventListener(type: string, listener: Listener): void {
     this.listeners[type]?.add(listener)
   }
@@ -55,6 +59,37 @@ function pair(): [MockSocket, MockSocket] {
 }
 
 describe('fromWebSocket', () => {
+  it('reports malformed cancellation frames without throwing out of the socket listener', async () => {
+    const [serverSocket, clientSocket] = pair()
+    const server = fromWebSocket(serverSocket)
+    const client = fromWebSocket(clientSocket)
+    const errors: unknown[] = []
+    server.raw.onError((error) => errors.push(error))
+    server.onRequest('system/ping', ({ sentAt }) => ({ sentAt, recvAt: 1 }))
+    server.listen()
+    client.listen()
+    try {
+      for (const params of [undefined, null]) {
+        expect(() =>
+          serverSocket.receive(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              method: '$/cancelRequest',
+              params,
+            })
+          )
+        ).not.toThrow()
+      }
+      expect(errors).toHaveLength(2)
+      await expect(
+        client.sendRequest('system/ping', { sentAt: 7 })
+      ).resolves.toEqual({ sentAt: 7, recvAt: 1 })
+    } finally {
+      client.dispose()
+      server.dispose()
+    }
+  })
+
   it('round-trips a request/response across a WebSocket', async () => {
     const [serverSocket, clientSocket] = pair()
     const server = fromWebSocket(serverSocket)
