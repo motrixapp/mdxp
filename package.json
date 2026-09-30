@@ -1,6 +1,6 @@
 {
   "name": "@motrix/mdxp",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Motrix Download eXchange Protocol — JSON-RPC 2.0 wire types and connection helpers",
   "license": "MIT",
   "author": "Motrix",
