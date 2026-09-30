@@ -1,6 +1,10 @@
 import { z } from 'zod'
 
-const HttpUrl = z.httpUrl({ message: 'URL must be http: or https:' })
+// Download hosts may be IP literals or local names; z.httpUrl requires a domain.
+const HttpUrl = z.url({
+  protocol: /^https?$/,
+  message: 'URL must be http: or https:',
+})
 
 export const CookieSchema = z.object({
   name: z.string(),
