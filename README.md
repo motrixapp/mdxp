@@ -474,6 +474,10 @@ an invalid request. A pre-dispatch directory rejection uses `InvalidParams` with
 included. Filesystem checks are not an OS sandbox: a local process that can
 replace directories concurrently is outside this guarantee.
 
+## Download handoff (unreleased contract)
+
+The optional `downloadHandoff` capability defines prepare/commit/status/abort for extension-owned confirmation. This package adds wire schemas, typed methods and shared payload fingerprint encoding; it does not enable application support. See the [handoff v1 contract](docs/download-handoff.md) for durable ledger, cancellation and recovery requirements. Hosts must keep the capability absent until those integration requirements pass.
+
 ## License
 
 [MIT](./LICENSE) © Dr_rOot

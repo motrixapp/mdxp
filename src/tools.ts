@@ -15,6 +15,16 @@ import {
   DownloadDirectoriesResultSchema,
 } from './schemas/download-directories.js'
 import {
+  DownloadHandoffAbortParamsSchema,
+  DownloadHandoffAbortResultSchema,
+  DownloadHandoffCommitParamsSchema,
+  DownloadHandoffCommitResultSchema,
+  DownloadHandoffPrepareParamsSchema,
+  DownloadHandoffPrepareResultSchema,
+  DownloadHandoffStatusParamsSchema,
+  DownloadHandoffStatusResultSchema,
+} from './schemas/download-handoff.js'
+import {
   EngineStatusParamsSchema,
   EngineStatusResultSchema,
 } from './schemas/engine.js'
@@ -88,6 +98,38 @@ export const Tools: Readonly<Record<string, MdxpToolDef>> = {
       'List available default, favorite and recent directories on the Motrix host.',
     paramsSchema: DownloadDirectoriesParamsSchema,
     resultSchema: DownloadDirectoriesResultSchema,
+    agentFacing: false,
+  },
+  [Methods.DownloadHandoffPrepare]: {
+    method: Methods.DownloadHandoffPrepare,
+    description:
+      'Prepare an inactive direct download without fetching its source.',
+    paramsSchema: DownloadHandoffPrepareParamsSchema,
+    resultSchema: DownloadHandoffPrepareResultSchema,
+    agentFacing: false,
+  },
+  [Methods.DownloadHandoffCommit]: {
+    method: Methods.DownloadHandoffCommit,
+    description:
+      'Commit a prepared download after the browser confirms its transfer stopped.',
+    paramsSchema: DownloadHandoffCommitParamsSchema,
+    resultSchema: DownloadHandoffCommitResultSchema,
+    agentFacing: false,
+  },
+  [Methods.DownloadHandoffStatus]: {
+    method: Methods.DownloadHandoffStatus,
+    description:
+      'Read an authenticated operation; not-found never proves no request is in flight.',
+    paramsSchema: DownloadHandoffStatusParamsSchema,
+    resultSchema: DownloadHandoffStatusResultSchema,
+    agentFacing: false,
+  },
+  [Methods.DownloadHandoffAbort]: {
+    method: Methods.DownloadHandoffAbort,
+    description:
+      'Abort an uncommitted handoff, creating a tombstone even if absent.',
+    paramsSchema: DownloadHandoffAbortParamsSchema,
+    resultSchema: DownloadHandoffAbortResultSchema,
     agentFacing: false,
   },
   [Methods.DownloadSubmit]: {

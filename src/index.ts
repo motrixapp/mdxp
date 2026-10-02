@@ -29,6 +29,10 @@ export {
   isProtocolError,
   makeMdxpError,
 } from './errors.js'
+export {
+  canonicalDownloadHandoffPayload,
+  canStartDownloadHandoff,
+} from './handoff.js'
 export type { Method, Notification } from './methods.js'
 export { Methods, Notifications } from './methods.js'
 

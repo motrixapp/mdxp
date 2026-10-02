@@ -13,6 +13,14 @@ import type {
   DownloadCancelResult,
   DownloadDirectoriesParams,
   DownloadDirectoriesResult,
+  DownloadHandoffAbortParams,
+  DownloadHandoffAbortResult,
+  DownloadHandoffCommitParams,
+  DownloadHandoffCommitResult,
+  DownloadHandoffPrepareParams,
+  DownloadHandoffPrepareResult,
+  DownloadHandoffStatusParams,
+  DownloadHandoffStatusResult,
   DownloadSubmitParams,
   DownloadSubmitResult,
   EngineStatusParams,
@@ -50,6 +58,22 @@ import type {
 export interface MdxpRequestMap {
   'motrix/initialize': [InitializeParams, InitializeResult]
   'download/submit': [DownloadSubmitParams, DownloadSubmitResult]
+  'download/handoff.prepare': [
+    DownloadHandoffPrepareParams,
+    DownloadHandoffPrepareResult,
+  ]
+  'download/handoff.commit': [
+    DownloadHandoffCommitParams,
+    DownloadHandoffCommitResult,
+  ]
+  'download/handoff.status': [
+    DownloadHandoffStatusParams,
+    DownloadHandoffStatusResult,
+  ]
+  'download/handoff.abort': [
+    DownloadHandoffAbortParams,
+    DownloadHandoffAbortResult,
+  ]
   'download/directories': [DownloadDirectoriesParams, DownloadDirectoriesResult]
   'download/cancel': [DownloadCancelParams, DownloadCancelResult]
   'url/probe': [UrlProbeParams, UrlProbeResult]

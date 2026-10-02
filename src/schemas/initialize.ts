@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DownloadHandoffCapabilitySchema } from './download-handoff.js'
 
 const PROTOCOL_VERSION = '1.0'
 
@@ -74,6 +75,10 @@ const ServerCapabilitiesSchema = z.object({
   taskReveal: z.boolean().optional().default(false),
   /** Enables download/directories AND download/submit.saveDir; absent is false. */
   downloadDirectories: z.boolean().optional(),
+  /** Advertise only with all four methods and a durable, recoverable ledger. */
+  // Unknown/invalid optional versions must not break the base handshake.
+  // This affects new-operation eligibility, never recovery of an existing key.
+  downloadHandoff: DownloadHandoffCapabilitySchema.optional().catch(undefined),
 })
 
 export const InitializeResultSchema = z.object({

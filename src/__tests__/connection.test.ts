@@ -193,3 +193,113 @@ describe('createMdxpConnection', () => {
     expect(observedCancelled).toBe(true)
   })
 })
+
+// Contract transport coverage only: these handlers deliberately do not model a
+// database, browser cancellation, or the download engine.
+describe('typed handoff requests', () => {
+  it('round-trips prepare/commit/status/abort without changing the operation binding', async () => {
+    const { Methods, Tools, DownloadHandoffPrepareParamsSchema } = await import(
+      '../index.js'
+    )
+    const { aToB, bToA } = makePair()
+    const client = createMdxpConnection(bToA.reader, aToB.writer)
+    const server = createMdxpConnection(aToB.reader, bToA.writer)
+    const key = {
+      instanceId: 'c2b6a2d2-430c-4bc1-bdb0-c10f35004c90',
+      operationId: '501e03a1-1c59-4c81-8dad-e670218d81b1',
+    }
+    const payloadHash = 'a'.repeat(64)
+    const taskId = 'reserved-task'
+    server.onRequest(Methods.DownloadHandoffPrepare, (input) => {
+      const params = DownloadHandoffPrepareParamsSchema.parse(input)
+      expect(params.download.selection.primary.url).toBe(
+        'http://127.0.0.1/file'
+      )
+      return { ...key, state: 'prepared', taskId, payloadHash, expiresAt: 1000 }
+    })
+    server.onRequest(Methods.DownloadHandoffCommit, (params) => {
+      expect(params).toEqual({ ...key, payloadHash })
+      return { ...key, state: 'committed', taskId, payloadHash }
+    })
+    server.onRequest(Methods.DownloadHandoffStatus, (params) => {
+      expect(params).toEqual(key)
+      return { ...key, state: 'committed', taskId, payloadHash }
+    })
+    server.onRequest(Methods.DownloadHandoffAbort, (params) => {
+      expect(params).toEqual(key)
+      // A losing abort reports the committed task, never a false cancellation.
+      return { ...key, state: 'committed', taskId, payloadHash }
+    })
+    client.listen()
+    server.listen()
+    try {
+      const prepare = await client.sendRequest(
+        Methods.DownloadHandoffPrepare,
+        DownloadHandoffPrepareParamsSchema.parse({
+          ...key,
+          download: {
+            source: {
+              pageUrl: 'https://example.test/',
+              pageTitle: '',
+              detectedAt: 0,
+            },
+            selection: {
+              kind: 'direct',
+              primary: { url: 'http://127.0.0.1/file' },
+            },
+            meta: { suggestedFilename: '', qualityLabel: '' },
+          },
+        })
+      )
+      expect(
+        Tools[Methods.DownloadHandoffPrepare]!.resultSchema.parse(prepare)
+      ).toMatchObject({ ...key, state: 'prepared' })
+      const commit = await client.sendRequest(Methods.DownloadHandoffCommit, {
+        ...key,
+        payloadHash,
+      })
+      const status = await client.sendRequest(
+        Methods.DownloadHandoffStatus,
+        key
+      )
+      const abort = await client.sendRequest(Methods.DownloadHandoffAbort, key)
+      expect(commit).toEqual({
+        ...key,
+        state: 'committed',
+        taskId,
+        payloadHash,
+      })
+      expect(status).toEqual(commit)
+      expect(abort).toEqual(commit)
+    } finally {
+      client.dispose()
+      server.dispose()
+    }
+  })
+  it.each([
+    ErrorCodes.HandoffInstanceChanged,
+    ErrorCodes.HandoffPayloadConflict,
+  ])('preserves handoff refusal %s across the connection', async (code) => {
+    const { Methods } = await import('../index.js')
+    const { aToB, bToA } = makePair()
+    const client = createMdxpConnection(bToA.reader, aToB.writer)
+    const server = createMdxpConnection(aToB.reader, bToA.writer)
+    server.onRequest(Methods.DownloadHandoffCommit, () => {
+      throw new ResponseError(code, 'Handoff refused', { retryable: false })
+    })
+    client.listen()
+    server.listen()
+    try {
+      await expect(
+        client.sendRequest(Methods.DownloadHandoffCommit, {
+          instanceId: 'c2b6a2d2-430c-4bc1-bdb0-c10f35004c90',
+          operationId: '501e03a1-1c59-4c81-8dad-e670218d81b1',
+          payloadHash: 'a'.repeat(64),
+        })
+      ).rejects.toMatchObject({ code, data: { retryable: false } })
+    } finally {
+      client.dispose()
+      server.dispose()
+    }
+  })
+})

@@ -16,6 +16,8 @@ export const ErrorCodes = Object.freeze({
   RateLimited: -32004,
   CapabilityNotSupported: -32005,
   PairRevoked: -32006,
+  HandoffInstanceChanged: -32007,
+  HandoffPayloadConflict: -32008,
 } as const)
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes]
