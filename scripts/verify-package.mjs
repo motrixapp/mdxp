@@ -64,6 +64,7 @@ try {
       )
     }
     assert.equal(typeof mod.canonicalDownloadHandoffPayload, 'function')
+    assert.equal(mod.canStartDownloadHandoff(undefined), false)
   }
   console.log('Verified handoff exports from all three packaged entry points')
 } finally {

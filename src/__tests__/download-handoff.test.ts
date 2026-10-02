@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   canonicalDownloadHandoffPayload,
   DownloadHandoffAbortResultSchema,
+  DownloadHandoffCapabilitySchema,
   DownloadHandoffCommitParamsSchema,
   DownloadHandoffCommitResultSchema,
   DownloadHandoffPayloadSchema,
@@ -94,8 +95,15 @@ describe('handoff negotiation and payload', () => {
       { ...capability, instanceId: '' },
       { ...capability, maxPreparedTtlMs: 0 },
       { ...capability, maxPreparedTtlMs: 120_001 },
-    ])
-      expect(parse(value).success).toBe(false)
+    ]) {
+      expect(DownloadHandoffCapabilitySchema.safeParse(value).success).toBe(
+        false
+      )
+      const result = parse(value)
+      expect(result.success).toBe(true)
+      if (result.success)
+        expect(result.data.capabilities.downloadHandoff).toBeUndefined()
+    }
   })
   it.each(['magnet', 'hls', 'dash', 'mux'])(
     'does not silently widen v1 to %s',

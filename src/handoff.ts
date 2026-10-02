@@ -1,4 +1,7 @@
-import { DownloadHandoffPayloadSchema } from './schemas/download-handoff.js'
+import {
+  DownloadHandoffCapabilitySchema,
+  DownloadHandoffPayloadSchema,
+} from './schemas/download-handoff.js'
 
 /**
  * Normalize schema defaults and sort object keys by UTF-16 code units, retaining
@@ -20,4 +23,18 @@ function encode(value: unknown): string {
     return `{${fields.map(([key, item]) => `${JSON.stringify(key)}:${encode(item)}`).join(',')}}`
   }
   return JSON.stringify(value)
+}
+
+/**
+ * Eligibility for a NEW operation only. Both rollout gates default closed.
+ * Never use this to downgrade a transmitted handoff: recover its persisted key
+ * through the original instance even while acceptingNew is false.
+ */
+export function canStartDownloadHandoff(
+  advertisement: unknown,
+  clientEnabled = false
+): boolean {
+  if (!clientEnabled) return false
+  const parsed = DownloadHandoffCapabilitySchema.safeParse(advertisement)
+  return parsed.success && parsed.data.acceptingNew
 }

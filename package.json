@@ -70,6 +70,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
+    "@motrix/mdxp-legacy": "npm:@motrix/mdxp@0.8.1",
     "@types/node": "^24.19.0",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2"

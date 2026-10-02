@@ -9,6 +9,8 @@ export const DownloadHandoffCapabilitySchema = z.object({
   /** Stable across restart; MUST rotate if the durable ledger is lost/reset. */
   instanceId: z.uuid(),
   maxPreparedTtlMs: z.number().int().min(1).max(120_000),
+  /** False drains existing operations while new downloads use legacy submit. */
+  acceptingNew: z.boolean().default(false),
 })
 
 /** Identity is supplied by the authenticated transport, never these params. */

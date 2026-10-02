@@ -76,7 +76,9 @@ const ServerCapabilitiesSchema = z.object({
   /** Enables download/directories AND download/submit.saveDir; absent is false. */
   downloadDirectories: z.boolean().optional(),
   /** Advertise only with all four methods and a durable, recoverable ledger. */
-  downloadHandoff: DownloadHandoffCapabilitySchema.optional(),
+  // Unknown/invalid optional versions must not break the base handshake.
+  // This affects new-operation eligibility, never recovery of an existing key.
+  downloadHandoff: DownloadHandoffCapabilitySchema.optional().catch(undefined),
 })
 
 export const InitializeResultSchema = z.object({

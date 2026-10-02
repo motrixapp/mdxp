@@ -16,7 +16,8 @@ An authenticated extension uses these methods only when initialize returns:
     "downloadHandoff": {
       "version": 1,
       "instanceId": "c2b6a2d2-430c-4bc1-bdb0-c10f35004c90",
-      "maxPreparedTtlMs": 30000
+      "maxPreparedTtlMs": 30000,
+      "acceptingNew": true
     }
   }
 }
@@ -35,6 +36,65 @@ schemas reject unknown options instead of silently downgrading them to GET. A
 valid URL is not permission to access it; normal host policy still applies. An
 already-open browser response cannot be transferred to the engine; accepting a
 Motrix handoff still needs another request and cannot guarantee one-use URLs.
+
+## Independent release and rollback
+
+Browser-store review delay and disabled automatic updates are normal supported
+states, not exceptions. Neither side may require synchronized installation.
+Keep protocolVersion `1.0` and the existing initialize, submit, task and pairing
+contracts. `download/submit` remains a first-class path with its existing request,
+response and error semantics, even after handoff is available. Do not redirect it
+to prepare/commit or require an instance/key field that older extensions do not
+send. Do not raise the minimum extension version just to enable this feature.
+
+| Extension | Motrix | New download path |
+| --- | --- | --- |
+| Existing | Existing | Existing submit |
+| Existing | Upgraded | Existing submit, unchanged |
+| Upgraded | Existing | Existing submit, unchanged |
+| Upgraded | Upgraded, either rollout gate off | Existing submit |
+| Upgraded | Upgraded, both gates on and v1 supported | Handoff for eligible requests only |
+| Upgraded | Host advertises an unknown/invalid handoff capability | Existing submit for new operations; base handshake still works |
+
+Capability support and rollout are separate. `acceptingNew` defaults to false;
+`canStartDownloadHandoff(advertisement, clientEnabled)` also defaults the client
+gate to false. This helper is only for **new operations before any handoff
+mutation is sent**. It must never be used to reroute an existing operation.
+Invalid/unknown optional capability data is discarded by initialize parsing;
+invalid mandatory base-protocol data still fails validation. Supported v1 mutation
+params and results remain strict. Client implementations must retain the legacy
+adapter/submit path and recover pending handoffs independently of these gates.
+
+Release order is additive, without a deadline tied to store approval:
+
+1. Release the SDK and a host retaining all legacy handlers, with new handoffs
+   disabled. Verify an actual released extension against this host.
+2. Ship an extension containing both paths and a disabled client rollout gate.
+   It must work against hosts without this capability throughout store review.
+3. Enable new operations only after both sides meet the integration acceptance
+   requirements, at their own release cadence. Never infer support from a
+   version string, store approval date or the presence of one method.
+
+To stop rollout, set `acceptingNew` false and reject the first prepare of an
+absent key with `CapabilityNotSupported`, without effects. Already prepared keys
+must still support repeated prepare, commit, status and abort. Capability changes
+may require renegotiation, so servers enforce the gate on dispatch, not only in
+initialize. A stale client denied before prepare still uses same-key recovery
+and must not blindly start legacy submit. It can choose a legacy path for a
+fresh operation only before any handoff mutation was transmitted.
+
+Do not remove handlers, discard the ledger or roll back to a binary without
+handoff recovery after any handoff could have been accepted. Use a compatible
+rollback build retaining the journal, activation reconciliation and handlers;
+new operations use legacy while existing ones finish/recover. A crash, reset or
+forced downgrade does not justify replaying unresolved work. Reverting an SDK
+version alone is not an application rollback procedure.
+
+The SDK CI tests use the **published 0.8.1 package**, through an exact dev-only
+alias, for old/new initialize and submit round trips. They establish wire
+compatibility, not production host route retention, browser-store distribution
+or database migration safety. Released extension/host cross-version E2E and
+rollback with in-flight operations remain mandatory before enabling rollout.
 
 ## Identity and payload
 
