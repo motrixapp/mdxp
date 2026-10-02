@@ -442,6 +442,10 @@ RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导�
 不返回底层文件系统错误细节。目录校验不是操作系统沙箱，不能防御有权限并发替换
 目录的本地进程。
 
+## 下载交接（尚未发布的契约）
+
+可选 `downloadHandoff` 能力定义扩展端确认使用的 prepare／commit／status／abort。本包新增传输 schema、强类型方法及共享载荷摘要编码，不直接启用应用支持。持久账本、取消与恢复要求见[交接 v1 契约](docs/download-handoff.zh-CN.md)；服务端通过对应集成验收前必须保持该能力缺省。
+
 ## License
 
 [MIT](./LICENSE) © Dr_rOot

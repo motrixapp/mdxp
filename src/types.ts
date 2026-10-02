@@ -13,6 +13,19 @@ export type {
   DownloadDirectoriesResult,
 } from './schemas/download-directories.js'
 export type {
+  DownloadHandoffAbortParams,
+  DownloadHandoffAbortResult,
+  DownloadHandoffCapability,
+  DownloadHandoffCommitParams,
+  DownloadHandoffCommitResult,
+  DownloadHandoffKey,
+  DownloadHandoffPayload,
+  DownloadHandoffPrepareParams,
+  DownloadHandoffPrepareResult,
+  DownloadHandoffStatusParams,
+  DownloadHandoffStatusResult,
+} from './schemas/download-handoff.js'
+export type {
   EngineFeatureReport,
   EngineState,
   EngineStatusParams,
