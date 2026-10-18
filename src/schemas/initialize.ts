@@ -74,6 +74,12 @@ const ServerCapabilitiesSchema = z.object({
   taskReveal: z.boolean().optional().default(false),
   /** Enables download/directories AND download/submit.saveDir; absent is false. */
   downloadDirectories: z.boolean().optional(),
+  /**
+   * Enables media/formats for an authenticated extension session; absent is
+   * false. The listing runs the host's extractor on a caller-supplied URL, so
+   * a client MUST NOT call the method unless the host advertised `true`.
+   */
+  mediaFormats: z.boolean().optional(),
 })
 
 export const InitializeResultSchema = z.object({

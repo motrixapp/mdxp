@@ -217,6 +217,28 @@ path. It is registered in `Tools` for schema discovery but intentionally omitted
 from `toAgentToolCatalog()` because opening a file-manager window is a UI side
 effect and must be initiated by the user.
 
+### List a page's media formats (client → server)
+
+```ts
+// Only after the host advertised mediaFormats support in the handshake.
+if (hello.capabilities.mediaFormats ?? false) {
+  const listing = await conn.sendRequest('media/formats', {
+    url: 'https://www.youtube.com/watch?v=…',
+    cookies: [{ name: 'SID', value: '…' }],
+  })
+
+  for (const option of listing.entries) {
+    // option.key ('1080p' | '1440p' | … | 'mp3') is echoed back verbatim as
+    // download/submit.meta.qualityLabel when the user picks it.
+    console.log(option.label, option.kind, option.sizeBytes)
+  }
+}
+```
+
+An extractor that cannot produce a listing answers `available: false` with a
+`reason` instead of a protocol error, so a client always gets a shape it can
+render.
+
 ### Resolve a page (server → client)
 
 The desktop app asks a client whether it can handle a page (`url/probe`), then
@@ -370,6 +392,7 @@ copy of `vscode-jsonrpc` can cause it to be serialized as an internal error.
 | `system/ping` | client → server | | Liveness probe; echoes `sentAt` with `recvAt`. |
 | `download/submit` | client → server | | Submit a browser-detected, page-shaped download. |
 | `download/cancel` | client → server | | Cancel a submitted download by task id. |
+| `media/formats` | client → server | | List the media qualities a page offers (extension quality picker). |
 | `download/add` | client → server | ✓ | Add a download by URL(s), magnet, or torrent. |
 | `task/list` | client → server | ✓ | List tasks, filterable + paginated. |
 | `task/get` | client → server | ✓ | Get one task by id. |
@@ -473,6 +496,17 @@ an invalid request. A pre-dispatch directory rejection uses `InvalidParams` with
 `data.appCode: "download-directory-unavailable"`; filesystem details are not
 included. Filesystem checks are not an OS sandbox: a local process that can
 replace directories concurrently is outside this guarantee.
+
+## Media formats (since 0.9.0)
+
+The optional `mediaFormats` capability adds `media/formats`: a client asks the
+host which downloadable video/audio qualities a page offers, so an extension
+quality picker can show real options before the user submits. The result is a
+successful `available: false` with a machine-readable `reason` when no listing
+can be produced, never a protocol error. The method is extension-only and not
+agent-facing. See the [media formats v1 contract](docs/media-formats.md) for the
+negotiation, data-sharing, resource-limit and transport-exposure requirements a
+host must satisfy before advertising it.
 
 ## License
 

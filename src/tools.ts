@@ -22,6 +22,10 @@ import {
   InitializeParamsSchema,
   InitializeResultSchema,
 } from './schemas/initialize.js'
+import {
+  MediaFormatsParamsSchema,
+  MediaFormatsResultSchema,
+} from './schemas/media-formats.js'
 import { StatsGetParamsSchema, StatsResultSchema } from './schemas/stats.js'
 import {
   SystemPingParamsSchema,
@@ -103,6 +107,14 @@ export const Tools: Readonly<Record<string, MdxpToolDef>> = {
     description: 'Cancel a previously submitted download by task id.',
     paramsSchema: DownloadCancelParamsSchema,
     resultSchema: DownloadCancelResultSchema,
+    agentFacing: false,
+  },
+  [Methods.MediaFormats]: {
+    method: Methods.MediaFormats,
+    description:
+      'List the extractable media formats (video/audio qualities) a page offers, for an extension quality picker.',
+    paramsSchema: MediaFormatsParamsSchema,
+    resultSchema: MediaFormatsResultSchema,
     agentFacing: false,
   },
   [Methods.DownloadAdd]: {

@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
 // Download hosts may be IP literals or local names; z.httpUrl requires a domain.
-const HttpUrl = z.url({
+// Exported so every method that makes the HOST fetch a caller-supplied URL
+// enforces the same http(s)-only policy (see `media/formats`).
+export const HttpUrlSchema = z.url({
   protocol: /^https?$/,
   message: 'URL must be http: or https:',
 })
@@ -20,7 +22,7 @@ export const CookieSchema = z.object({
 })
 
 export const ResourceSchema = z.object({
-  url: HttpUrl,
+  url: HttpUrlSchema,
   headers: z.record(z.string(), z.string()).default({}),
   cookies: z.array(CookieSchema).default([]),
   refererPolicy: z.string().default('strict-origin-when-cross-origin'),
