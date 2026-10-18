@@ -199,6 +199,18 @@ if (hello.capabilities.taskReveal ?? false) {
 `taskId`，绝不接受任意本地路径。它会注册在 `Tools` 中以便发现 schema，但不会进入
 `toAgentToolCatalog()`；打开文件管理器属于 UI 副作用，必须由用户发起。
 
+### 列出媒体画质选项（client → server）
+
+`media/formats`（自 0.9.0 起）是供扩展画质选择器使用的可选方法。只有用户明确操作、
+目标声明 `capabilities.mediaFormats === true`，且当前端点的数据共享授权有效时才能
+调用；Cookie 披露还需要独立凭据授权。不得向旧目标发送试探请求。
+
+使用 `MediaFormatsParamsSchema`／`MediaFormatsResultSchema` 并发送解析后的值。
+请求保留 Cookie 的完整作用域（Unix 毫秒有效期），总大小不超过 64 KiB，也不构成后续
+下载授权。结果为非空画质列表，或 `{ available: false, reason, entries: [] }`。
+必需的授权、抽取器、错误和兼容规则见[媒体格式契约](docs/media-formats.zh-CN.md)。
+连接辅助函数不会替应用授予权限或执行这些检查。
+
 ### 解析页面（server → client）
 
 桌面端会先问某个 client 能否处理这个页面（`url/probe`），再请它抽取出可下载的资源
@@ -349,6 +361,7 @@ RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导�
 | `system/ping` | client → server | | 存活探测；回显 `sentAt` 与 `recvAt`。 |
 | `download/submit` | client → server | | 提交浏览器侦测到的 page 形态下载。 |
 | `download/cancel` | client → server | | 按 task id 取消已提交的下载。 |
+| `media/formats` | client → server | | 列出用户明确请求的媒体画质选项（仅供扩展）。 |
 | `download/add` | client → server | ✓ | 按 URL / magnet / torrent 添加下载。 |
 | `task/list` | client → server | ✓ | 列出 task，可过滤、可分页。 |
 | `task/get` | client → server | ✓ | 按 id 取单个 task。 |

@@ -4,7 +4,14 @@ import 'vscode-jsonrpc/node'
 import { describe, expect, it } from 'vitest'
 import type { Message, MessageReader, MessageWriter } from 'vscode-jsonrpc'
 import { createMdxpConnection } from '../connection.js'
-import { ErrorCodes, ResponseError } from '../index.js'
+import {
+  DownloadSubmitParamsSchema,
+  ErrorCodes,
+  MediaFormatsParamsSchema,
+  MediaFormatsResultSchema,
+  Methods,
+  ResponseError,
+} from '../index.js'
 
 // In-memory message pipe for testing.
 class InMemoryReader implements MessageReader {
@@ -64,6 +71,79 @@ function makePair(): {
 }
 
 describe('createMdxpConnection', () => {
+  it('round-trips scoped format requests and a picker choice for download/submit', async () => {
+    const { aToB, bToA } = makePair()
+    const client = createMdxpConnection(bToA.reader, aToB.writer)
+    const server = createMdxpConnection(aToB.reader, bToA.writer)
+    const cookies = [
+      {
+        name: 'member',
+        value: 'fixture-only',
+        domain: 'media.example',
+        path: '/watch',
+        secure: true,
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        expiresAt: 1_900_000_000_000,
+      },
+    ]
+    let invocations = 0
+    // Runtime validation remains the receiving application's responsibility.
+    server.onRequest(Methods.MediaFormats, (params) => {
+      const parsed = MediaFormatsParamsSchema.safeParse(params)
+      if (!parsed.success)
+        throw new ResponseError(
+          ErrorCodes.InvalidParams,
+          'Invalid media formats request'
+        )
+      invocations += 1
+      expect(parsed.data.cookies).toEqual(cookies)
+      return MediaFormatsResultSchema.parse({
+        available: true,
+        entries: [
+          { kind: 'video', key: '1080p', label: '1080p', height: 1080 },
+          { kind: 'audio', key: 'mp3', label: 'MP3' },
+        ],
+      })
+    })
+    client.listen()
+    server.listen()
+    try {
+      const result = await client.sendRequest(Methods.MediaFormats, {
+        url: 'https://media.example/watch/1',
+        cookies,
+      })
+      expect(result.available).toBe(true)
+      const key = result.entries[0]!.key
+      const submitted = DownloadSubmitParamsSchema.parse({
+        source: {
+          pageUrl: 'https://media.example/watch/1',
+          pageTitle: 'Fixture',
+          detectedAt: 1,
+        },
+        selection: {
+          kind: 'direct',
+          primary: {
+            url: 'https://media.example/watch/1',
+            cookies,
+            headers: {},
+          },
+        },
+        meta: { suggestedFilename: 'fixture.mp4', qualityLabel: key },
+      })
+      expect(submitted.meta.qualityLabel).toBe('1080p')
+      await expect(
+        client.sendRequest(Methods.MediaFormats, {
+          url: 'file:///private/fixture',
+          cookies,
+        })
+      ).rejects.toMatchObject({ code: ErrorCodes.InvalidParams })
+      expect(invocations).toBe(1)
+    } finally {
+      client.dispose()
+      server.dispose()
+    }
+  })
   it('preserves codes and data from the public ResponseError constructor', async () => {
     const { aToB, bToA } = makePair()
     const a = createMdxpConnection(bToA.reader, aToB.writer)

@@ -74,6 +74,8 @@ const ServerCapabilitiesSchema = z.object({
   taskReveal: z.boolean().optional().default(false),
   /** Enables download/directories AND download/submit.saveDir; absent is false. */
   downloadDirectories: z.boolean().optional(),
+  /** Registered, authorized extension format listing; absent/false means no call. */
+  mediaFormats: z.boolean().optional(),
 })
 
 export const InitializeResultSchema = z.object({
