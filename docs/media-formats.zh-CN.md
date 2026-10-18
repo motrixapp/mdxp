@@ -42,6 +42,9 @@ RPC 注册；下面的授权和抽取器要求由应用实现。
 `path`、`secure`、`httpOnly`、`sameSite`，以及可选的 `expiresAt`。过期时间是
 **Unix 毫秒**，缺失表示会话 Cookie。无前导点的 domain 为 host-only；有前导点的
 domain 按常规 Cookie 策略匹配域名。默认值与 `CookieSchema` 相同。
+DNS Cookie 域允许保留一个尾点，校验和匹配时不得删除：`media.example.` 与
+`media.example` 是两个独立的 Cookie 作用域。拒绝多个尾点，不能删除尾点来让 Cookie
+匹配另一个域。
 
 新方法限制字段大小，并拒绝非法名称、控制字符、值中的 Cookie 分隔符、非法 domain
 与 path。请求 schema 拒绝 domain／path／Secure 范围不覆盖目标 URL 的 Cookie。

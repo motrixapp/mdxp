@@ -157,6 +157,68 @@ describe('media formats request boundary', () => {
     ).toBe(true)
   })
 
+  it.each([
+    ['www.media.example.', 'https://www.media.example./watch'],
+    ['WWW.MEDIA.EXAMPLE.', 'https://www.media.example./watch'],
+    ['.media.example.', 'https://media.example./watch'],
+    ['.media.example.', 'https://www.media.example./watch'],
+    ['.media.example.', 'https://cdn.www.media.example./watch/video'],
+  ])('preserves a trailing-dot cookie domain %s for %s', (domain, url) => {
+    const scoped = { ...cookie, domain }
+    const parsed = MediaFormatsParamsSchema.parse({ url, cookies: [scoped] })
+    expect(parsed.url).toBe(url)
+    expect(parsed.cookies).toEqual([scoped])
+    expect(parsed.cookies?.[0].domain.endsWith('.')).toBe(true)
+  })
+
+  it.each([
+    ['www.media.example', 'https://www.media.example./watch'],
+    ['www.media.example.', 'https://www.media.example/watch'],
+    ['.media.example', 'https://media.example./watch'],
+    ['.media.example.', 'https://media.example/watch'],
+    ['.media.example', 'https://www.media.example./watch'],
+    ['.media.example.', 'https://www.media.example/watch'],
+    ['media.example.', 'https://www.media.example./watch'],
+    ['.media.example.', 'https://notmedia.example./watch'],
+    ['.media.example.', 'https://media.example.attacker.test./watch'],
+    ['.media.example.', 'https://www.media.example../watch'],
+  ])('isolates trailing-dot cookie scope %s from %s', (domain, url) => {
+    expect(
+      MediaFormatCookieSchema.safeParse({ ...cookie, domain }).success
+    ).toBe(true)
+    expect(
+      MediaFormatsParamsSchema.safeParse({
+        url,
+        cookies: [{ ...cookie, domain }],
+      }).success
+    ).toBe(false)
+  })
+
+  it.each(['media.example..', '.media.example..', 'www.media.example...', '.'])(
+    'rejects a malformed trailing-dot cookie domain %s',
+    (domain) => {
+      expect(
+        MediaFormatCookieSchema.safeParse({ ...cookie, domain }).success
+      ).toBe(false)
+    }
+  )
+
+  it.each([
+    'http://www.media.example./watch',
+    'https://www.media.example./watcher',
+    'https://www.media.example./account',
+  ])(
+    'retains Secure and path boundaries for trailing-dot cookies at %s',
+    (url) => {
+      expect(
+        MediaFormatsParamsSchema.safeParse({
+          url,
+          cookies: [{ ...cookie, domain: '.media.example.' }],
+        }).success
+      ).toBe(false)
+    }
+  )
+
   it('bounds the whole parsed request rather than each cookie in isolation', () => {
     const oversized = {
       url,

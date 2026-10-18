@@ -58,6 +58,9 @@ There are no raw headers, extractor flags, format selectors, or local paths.
 `expiresAt`. Expiry is **Unix milliseconds**. An absent expiry denotes a session
 cookie. A domain without a leading dot is host-only; a leading dot permits
 domain matching under normal cookie policy. Defaults match `CookieSchema`.
+DNS cookie domains may retain one trailing dot. Preserve it during validation
+and matching: `media.example.` and `media.example` are separate cookie scopes.
+Reject multiple trailing dots; do not remove a dot to make a cookie match.
 
 The new method bounds fields and rejects malformed names, control characters,
 cookie delimiters in values, invalid domains, and invalid paths. Its request

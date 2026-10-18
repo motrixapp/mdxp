@@ -28,12 +28,14 @@ function validCookieDomain(value: string): boolean {
   if (
     !host ||
     host.startsWith('.') ||
-    host.endsWith('.') ||
+    host.endsWith('..') ||
     /[\s/\\@?#;]/.test(host)
   )
     return false
   try {
     const url = new URL(`http://${host}`)
+    // Preserve a single DNS root dot: browsers isolate dotted and undotted
+    // cookie domains. Never strip it before the exact/suffix scope checks.
     return !url.port && url.hostname.toLowerCase() === host.toLowerCase()
   } catch {
     return false
