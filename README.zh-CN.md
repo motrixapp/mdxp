@@ -199,6 +199,27 @@ if (hello.capabilities.taskReveal ?? false) {
 `taskId`，绝不接受任意本地路径。它会注册在 `Tools` 中以便发现 schema，但不会进入
 `toAgentToolCatalog()`；打开文件管理器属于 UI 副作用，必须由用户发起。
 
+### 列出页面的媒体格式（client → server）
+
+```ts
+// 仅在握手时目标已声明支持媒体格式后才可调用。
+if (hello.capabilities.mediaFormats ?? false) {
+  const listing = await conn.sendRequest('media/formats', {
+    url: 'https://www.youtube.com/watch?v=…',
+    cookies: [{ name: 'SID', value: '…' }],
+  })
+
+  for (const option of listing.entries) {
+    // 用户选中后，option.key（'1080p' | '1440p' | … | 'mp3'）会原样回填为
+    // download/submit.meta.qualityLabel。
+    console.log(option.label, option.kind, option.sizeBytes)
+  }
+}
+```
+
+抽取器无法列出格式时，返回 `available: false` 与 `reason`，而不是抛协议错误，
+因此 client 总能拿到可直接渲染的结构。
+
 ### 解析页面（server → client）
 
 桌面端会先问某个 client 能否处理这个页面（`url/probe`），再请它抽取出可下载的资源
@@ -349,6 +370,7 @@ RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导�
 | `system/ping` | client → server | | 存活探测；回显 `sentAt` 与 `recvAt`。 |
 | `download/submit` | client → server | | 提交浏览器侦测到的 page 形态下载。 |
 | `download/cancel` | client → server | | 按 task id 取消已提交的下载。 |
+| `media/formats` | client → server | | 列出该页面可用的媒体清晰度（扩展的画质选择器）。 |
 | `download/add` | client → server | ✓ | 按 URL / magnet / torrent 添加下载。 |
 | `task/list` | client → server | ✓ | 列出 task，可过滤、可分页。 |
 | `task/get` | client → server | ✓ | 按 id 取单个 task。 |
@@ -441,6 +463,14 @@ RPC handler 需要保留错误码和 data 时，应抛出从 `@motrix/mdxp` 导�
 `InvalidParams`，并携带 `data.appCode: "download-directory-unavailable"`，
 不返回底层文件系统错误细节。目录校验不是操作系统沙箱，不能防御有权限并发替换
 目录的本地进程。
+
+## 媒体格式（自 0.9.0 起）
+
+可选的 `mediaFormats` 能力新增了 `media/formats`：client 询问目标该页面提供哪些可下载
+的视频/音频清晰度，以便扩展的画质选择器在用户提交前展示真实选项。无法列出格式时，
+返回成功的 `available: false` 与机器可读的 `reason`，而不是抛协议错误。该方法仅供扩展
+使用，不是 agent-facing 接口。目标在声明支持前必须满足的协商、数据共享、资源上限与
+传输暴露要求，见[媒体格式 v1 契约](docs/media-formats.zh-CN.md)。
 
 ## License
 

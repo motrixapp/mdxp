@@ -7,6 +7,8 @@ export const Methods = Object.freeze({
   UrlProbe: 'url/probe',
   UrlResolve: 'url/resolve',
   SystemPing: 'system/ping',
+  // Extension-only media surface (since 0.9.0)
+  MediaFormats: 'media/formats',
   // v1 control-plane (Spec 2)
   DownloadAdd: 'download/add',
   TaskList: 'task/list',
