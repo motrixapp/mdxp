@@ -30,6 +30,12 @@ export type {
   InitializeResult,
 } from './schemas/initialize.js'
 export type {
+  MediaFormatCookie,
+  MediaFormatEntry,
+  MediaFormatsParams,
+  MediaFormatsResult,
+} from './schemas/media-formats.js'
+export type {
   Cookie,
   Resource,
 } from './schemas/resource.js'

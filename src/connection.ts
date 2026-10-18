@@ -19,6 +19,8 @@ import type {
   EngineStatusResult,
   InitializeParams,
   InitializeResult,
+  MediaFormatsParams,
+  MediaFormatsResult,
   PairRevokedParams,
   StatsGetParams,
   StatsResult,
@@ -55,6 +57,7 @@ export interface MdxpRequestMap {
   'url/probe': [UrlProbeParams, UrlProbeResult]
   'url/resolve': [UrlResolveParams, UrlResolveResult]
   'system/ping': [SystemPingParams, SystemPingResult]
+  'media/formats': [MediaFormatsParams, MediaFormatsResult]
   // v1 control-plane (Spec 2)
   'download/add': [DownloadAddParams, DownloadAddResult]
   'task/list': [TaskListParams, TaskListResult]
