@@ -41,7 +41,7 @@ describe('media formats request boundary', () => {
     const parsed = MediaFormatsParamsSchema.parse({ url, cookies: [cookie] })
     expect(parsed.cookies).toEqual([cookie])
     expect(CookieSchema.parse(parsed.cookies?.[0])).toEqual(cookie)
-    expect(parsed.cookies?.[0].expiresAt).toBe(1_900_000_000_123)
+    expect(parsed.cookies?.[0]?.expiresAt).toBe(1_900_000_000_123)
   })
 
   it.each([
@@ -168,7 +168,7 @@ describe('media formats request boundary', () => {
     const parsed = MediaFormatsParamsSchema.parse({ url, cookies: [scoped] })
     expect(parsed.url).toBe(url)
     expect(parsed.cookies).toEqual([scoped])
-    expect(parsed.cookies?.[0].domain.endsWith('.')).toBe(true)
+    expect(parsed.cookies?.[0]?.domain.endsWith('.')).toBe(true)
   })
 
   it.each([

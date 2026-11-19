@@ -4,6 +4,7 @@ import 'vscode-jsonrpc/node'
 import { describe, expect, it } from 'vitest'
 import type { Message, MessageReader, MessageWriter } from 'vscode-jsonrpc'
 import { createMdxpConnection } from '../connection.js'
+import { InitializeParamsSchema, InitializeResultSchema } from '../index.js'
 
 class InMemoryReader implements MessageReader {
   private listeners: Array<(msg: Message) => void> = []
@@ -59,7 +60,7 @@ describe('e2e: full init + resolve + completion flow', () => {
     // Motrix handles initialize
     motrix.onRequest('motrix/initialize', (params) => {
       expect(params.protocolVersion).toBe('1.0')
-      return {
+      return InitializeResultSchema.parse({
         protocolVersion: '1.0',
         server: { name: 'motrix', version: '2.0', runtime: 'electron' },
         capabilities: {
@@ -70,7 +71,7 @@ describe('e2e: full init + resolve + completion flow', () => {
         },
         serverAdapters: [],
         pairToken: 'tok-123',
-      }
+      })
     })
 
     // ext handles url/resolve
@@ -114,19 +115,22 @@ describe('e2e: full init + resolve + completion flow', () => {
     motrix.listen()
 
     // ext initiates handshake
-    const initResult = await ext.sendRequest('motrix/initialize', {
-      protocolVersion: '1.0',
-      client: {
-        name: 'motrix-extension',
-        version: '0.1',
-        extensionId: 'ext-id',
-        browser: 'chromium',
-        browserVersion: '120',
-        locale: 'en',
-      },
-      capabilities: { resolveUrl: true, submitDownload: true },
-      adapters: [],
-    })
+    const initResult = await ext.sendRequest(
+      'motrix/initialize',
+      InitializeParamsSchema.parse({
+        protocolVersion: '1.0',
+        client: {
+          name: 'motrix-extension',
+          version: '0.1',
+          extensionId: 'ext-id',
+          browser: 'chromium',
+          browserVersion: '120',
+          locale: 'en',
+        },
+        capabilities: { resolveUrl: true, submitDownload: true },
+        adapters: [],
+      })
+    )
     expect(initResult.pairToken).toBe('tok-123')
 
     // Motrix → ext: url/resolve

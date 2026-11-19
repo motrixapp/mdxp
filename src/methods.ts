@@ -2,6 +2,10 @@
 export const Methods = Object.freeze({
   MotrixInitialize: 'motrix/initialize',
   DownloadSubmit: 'download/submit',
+  DownloadHandoffPrepare: 'download/handoff.prepare',
+  DownloadHandoffCommit: 'download/handoff.commit',
+  DownloadHandoffStatus: 'download/handoff.status',
+  DownloadHandoffAbort: 'download/handoff.abort',
   DownloadDirectories: 'download/directories',
   DownloadCancel: 'download/cancel',
   UrlProbe: 'url/probe',
