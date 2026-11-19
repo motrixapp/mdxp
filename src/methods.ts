@@ -11,6 +11,7 @@ export const Methods = Object.freeze({
   UrlProbe: 'url/probe',
   UrlResolve: 'url/resolve',
   SystemPing: 'system/ping',
+  MediaFormats: 'media/formats',
   // v1 control-plane (Spec 2)
   DownloadAdd: 'download/add',
   TaskList: 'task/list',

@@ -26,6 +26,8 @@ try {
     )
   )
   const files = new Set(packed.files.map((file) => file.path))
+  assert.ok(files.has('docs/media-formats.md'))
+  assert.ok(files.has('docs/media-formats.zh-CN.md'))
   assert.ok(files.has('docs/download-handoff.md'))
   assert.ok(files.has('docs/download-handoff.zh-CN.md'))
   assert.ok(files.has('dist/schemas/download-handoff.d.ts'))
@@ -63,6 +65,8 @@ try {
         'function'
       )
     }
+    assert.equal(mod.Methods.MediaFormats, 'media/formats')
+    assert.equal(typeof mod.MediaFormatsResultSchema.parse, 'function')
     assert.equal(typeof mod.canonicalDownloadHandoffPayload, 'function')
     assert.equal(mod.canStartDownloadHandoff(undefined), false)
   }

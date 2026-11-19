@@ -217,6 +217,22 @@ path. It is registered in `Tools` for schema discovery but intentionally omitted
 from `toAgentToolCatalog()` because opening a file-manager window is a UI side
 effect and must be initiated by the user.
 
+### List media quality choices (client → server)
+
+`media/formats` (since 0.9.0) is an optional extension-only method for a quality
+picker. Call it only after an explicit user action, advertised
+`capabilities.mediaFormats === true`, and the current endpoint's data-sharing
+authorization. Cookie disclosure additionally requires the separate credential
+grant. An old host receives no request.
+
+Use `MediaFormatsParamsSchema` / `MediaFormatsResultSchema` and send parsed
+values. Requests preserve full Cookie scope (expiry in Unix milliseconds), are
+bounded to 64 KiB, and do not authorize a later download. Results are either a
+nonempty quality list or `{ available: false, reason, entries: [] }`. See the
+[media formats contract](docs/media-formats.md) for the mandatory authorization,
+extractor, error, and compatibility rules. The connection helper does not grant
+permissions or run these checks for an application.
+
 ### Resolve a page (server → client)
 
 The desktop app asks a client whether it can handle a page (`url/probe`), then
@@ -370,6 +386,7 @@ copy of `vscode-jsonrpc` can cause it to be serialized as an internal error.
 | `system/ping` | client → server | | Liveness probe; echoes `sentAt` with `recvAt`. |
 | `download/submit` | client → server | | Submit a browser-detected, page-shaped download. |
 | `download/cancel` | client → server | | Cancel a submitted download by task id. |
+| `media/formats` | client → server | | List explicitly requested media quality choices (extension-only). |
 | `download/add` | client → server | ✓ | Add a download by URL(s), magnet, or torrent. |
 | `task/list` | client → server | ✓ | List tasks, filterable + paginated. |
 | `task/get` | client → server | ✓ | Get one task by id. |

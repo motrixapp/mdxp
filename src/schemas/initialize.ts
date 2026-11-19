@@ -79,6 +79,8 @@ const ServerCapabilitiesSchema = z.object({
   // Unknown/invalid optional versions must not break the base handshake.
   // This affects new-operation eligibility, never recovery of an existing key.
   downloadHandoff: DownloadHandoffCapabilitySchema.optional().catch(undefined),
+  /** Registered, authorized extension format listing; absent/false means no call. */
+  mediaFormats: z.boolean().optional(),
 })
 
 export const InitializeResultSchema = z.object({
